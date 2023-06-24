@@ -1,17 +1,13 @@
 const mongoose = require('mongoose');
-const schema = mongoose.Schema;
+// const schema = mongoose.Schema;
 
-var user = new mongoose.Schema({
+var farmer = new mongoose.Schema({
     name: {
         type: String,
         required: true
     },
     email: {
         type: String,
-        required: true
-    },
-    sessionId: {
-        type: schema.ObjectId,
         default: null
     },
     phone_number: {
@@ -36,6 +32,6 @@ var user = new mongoose.Schema({
     }
 });
 
-const userschema = mongoose.model('users', user);
+const farmerschema = mongoose.model('farmers', farmer);
 
-module.exports = userschema;
+module.exports = farmerschema;
