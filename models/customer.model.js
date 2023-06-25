@@ -1,30 +1,14 @@
 const mongoose = require('mongoose');
-const schema = mongoose.Schema;
+// const schema = mongoose.Schema;
 
-var user = new mongoose.Schema({
+var customer = new mongoose.Schema({
     name: {
-        type: String,
-        required: true
-    },
-    username: {
-        type: String,
-        required: true
-    },
-    password: {
         type: String,
         required: true
     },
     email: {
         type: String,
-        default: ''
-    },
-    userId: {
-        type: String,
         required: true
-    },
-    sessionId: {
-        type: String,
-        default: null
     },
     phone_number: {
         type: Number,
@@ -48,6 +32,6 @@ var user = new mongoose.Schema({
     }
 });
 
-const userschema = mongoose.model('users', user);
+const customerschema = mongoose.model('customers', customer);
 
-module.exports = userschema;
+module.exports = customerschema;

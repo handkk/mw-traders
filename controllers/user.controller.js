@@ -1,5 +1,6 @@
 'use strict';
 var userModel = require('../models/user.model');
+const { v4: uuidv4 } = require('uuid');
 
 // Get Users
 exports.getUsers = (req, res) => {
@@ -20,11 +21,18 @@ exports.createUser = (req, res) => {
         res.status(400).send({message: 'payload is required'});
         return;
     }
-
+    const uuid = uuidv4();
+    req.body['userId'] = uuid;
     const user = new userModel(req.body);
     user.save(user)
     .then(data => {
-        res.send(data);
+        userModel.findOne({'username': req.body.username}).then(userinfo => {
+            res.send(userinfo);
+        }).catch(err => {
+            res.status(500).send({
+                message: err.message || 'user not found'
+            });
+        })
     })
     .catch(err => {
         res.status(500).send({
@@ -82,4 +90,121 @@ exports.deleteUser = (req, res) => {
             message: err.message || 'delete operation is not occured'
         });
     })   
+}
+
+// Get User Info
+exports.getUserInfo = (req, res) => {
+    if (!req.params.id) {
+        return res.status(400).send({message: 'User id is required'});
+    }
+    const userid = req.params.id;
+
+    userModel.findOne({'_id': userid})
+    .then(data => {
+        if (!data) {
+            res.status(404).send({
+                message: `User not found with id: ${userid}`
+            });
+        } else {
+            res.send(data);
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'not able to get user info'
+        });
+    })
+}
+
+// Login
+exports.login = (req, res) => {
+    console.log('\n login req body ', JSON.stringify(req.body), '\n');
+    if (!req.body.username && req.body.password) {
+        return res.status(400).send({message: 'Username & Password is required'});
+    }
+    const username = req.body.username;
+    const pwd = req.body.password;
+
+    userModel.findOne({'username': username, 'password': pwd})
+    .then(data => {
+        if (!data) {
+            res.status(404).send({
+                message: `Invalid credentials`
+            });
+        } else {
+            console.log('\n user data ', JSON.stringify(data), '\n');
+            const userid = data._id;
+            const uuid = uuidv4();
+            const session = { sessionId: uuid }
+            console.log('\n user id ', userid, '\n');
+            console.log('\n user name ', username, '\n');
+            console.log('\n sessionid ', JSON.stringify(session), '\n');
+            userModel.findOneAndUpdate({'username': username}, session).then(sessionupdated => {
+                console.log('\n user updated with session ', JSON.stringify(sessionupdated), '\n');
+                userModel.findOne({'username': username}).then(userinfo => {
+                    res.send(userinfo);
+                }).catch(err => {
+                    // console.log('\n user updated with session err ', JSON.stringify(err), '\n');
+                    res.status(500).send({
+                        message: err.message || 'user not found'
+                    });
+                })
+            }).catch(err => {
+                console.log('\n user updated with session err ', JSON.stringify(err), '\n');
+                res.status(500).send({
+                    message: err.message || 'Invalid credentials'
+                });
+            })
+        }
+    })
+    .catch(err => {
+        console.log('\n user not found catch err ', JSON.stringify(err), '\n');
+        res.status(500).send({
+            message: err.message || 'not able to get user info'
+        });
+    })
+}
+
+// Logout
+exports.logout = (req, res) => {
+    console.log('\n logout req body ', JSON.stringify(req.body), '\n');
+    if (!req.body.userId && !req.body.sessionId) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
+    }
+    const userId = req.body.userId;
+    const sessionId = req.body.sessionId;
+
+    userModel.findOne({'userId': userId, 'sessionId': sessionId})
+    .then(data => {
+        if (!data) {
+            res.status(404).send({
+                message: `User not found`
+            });
+        } else {
+            console.log('\n user data ', JSON.stringify(data), '\n');
+            const session = { sessionId: '' };
+            console.log('\n sessionid ', JSON.stringify(session), '\n');
+            userModel.findOneAndUpdate({'userId': userId}, session).then(sessionout => {
+                // console.log('\n user updated with session ', JSON.stringify(sessionupdated), '\n');
+                userModel.findOne({'userId': userId}).then(userinfo => {
+                    res.send(userinfo);
+                }).catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'user not found'
+                    });
+                })
+            }).catch(err => {
+                console.log('\n user updated with session err ', JSON.stringify(err), '\n');
+                res.status(500).send({
+                    message: err.message || 'Invalid credentials'
+                });
+            })
+        }
+    })
+    .catch(err => {
+        console.log('\n user not found catch err ', JSON.stringify(err), '\n');
+        res.status(500).send({
+            message: err.message || 'not able to get user info'
+        });
+    })
 }
