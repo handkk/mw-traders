@@ -8,10 +8,13 @@ const cors = require('cors');
 
 const connectDB = require('./database/connection');
 const app = express();
-const corsOptions ={
-    origin:'http://localhost:4200',
-    credentials:true,            //access-control-allow-credentials:true
-    optionSuccessStatus:200
+// const corsOptions ={
+//     origin:'http://localhost:4200',
+//     credentials:true,            //access-control-allow-credentials:true
+//     optionSuccessStatus:200
+// }
+const corsOptions = {
+    origin: '*'
 }
 app.use(cors(corsOptions));
 
@@ -44,7 +47,7 @@ app.use('/js', express.static(path.resolve(__dirname, 'assets/js')));
 // var traders = require('./routes/traders.route');
 app.use('/', router);
 // app.use('/traders', traders.apis);
-app.listen(port, () => { 
+app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
     // adminUser();
 })
