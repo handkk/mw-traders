@@ -42,7 +42,7 @@ exports.updateFarmer = (req, res) => {
     const id = req.params.id;
     // console.log('update user id ', userid, '\n');
 
-    farmerModel.findOneAndUpdate({'_id': id}, req.body)
+    farmerModel.findOneAndUpdate({'_id': id}, req.body, { returnDocument: "after" })
     .then(updatedFarmerData => {
         if (!updatedFarmerData) {
             res.status(404).send({
@@ -74,7 +74,7 @@ exports.deleteFarmer = (req, res) => {
                 message: `Cannot delete user with id ${id}`
             });
         } else {
-            res.send(data);
+            res.send({ success: true, message: "Farmer Deleted Successfully" });
         }
     })
     .catch(err => {

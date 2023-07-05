@@ -50,7 +50,7 @@ exports.updateUser = (req, res) => {
     const userid = req.params.id;
     console.log('update user id ', userid, '\n');
 
-    userModel.findOneAndUpdate({'_id': userid}, req.body)
+    userModel.findOneAndUpdate({'_id': userid}, req.body, { returnDocument: "after" })
     .then(updatedUserData => {
         if (!updatedUserData) {
             res.status(404).send({
@@ -73,16 +73,36 @@ exports.deleteUser = (req, res) => {
         return res.status(400).send({message: 'User id param is required'});
     }
     const userid = req.params.id;
-    console.log('update user id ', userid, '\n');
-
-    userModel.findOneAndRemove({'_id': userid})
-    .then(removedUser => {
-        if (!removedUser) {
-            res.status(404).send({
-                message: `Cannot delete user with id ${userid}`
-            });
+    const user_id = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': user_id,
+        'sessionId': sessionId
+    }
+    if (userid === user_id) {
+        return res.status(400).send({message: 'You do not have permission for delete user'});
+    }
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            userModel.findOneAndRemove({'_id': userid})
+            .then(removedUser => {
+                if (!removedUser) {
+                    res.status(404).send({
+                        message: `Cannot delete user with id ${userid}`
+                    });
+                } else {
+                    res.send({ success: true, message: "User Deleted Successfully" });
+                }
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'delete operation is not occured'
+                });
+            })
         } else {
-            res.send(removedUser);
+            res.status(500).send({
+                message: 'User session ended, Please login again'
+            })
         }
     })
     .catch(err => {

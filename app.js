@@ -8,12 +8,12 @@ const cors = require('cors');
 
 const connectDB = require('./database/connection');
 const app = express();
-// const corsOptions ={
-//     origin:'http://localhost:3000', 
-//     credentials:true,            //access-control-allow-credentials:true
-//     optionSuccessStatus:200
-// }
-// app.use(cors(corsOptions));
+const corsOptions ={
+    origin:'http://localhost:4200',
+    credentials:true,            //access-control-allow-credentials:true
+    optionSuccessStatus:200
+}
+app.use(cors(corsOptions));
 
 dotenv.config({ path: 'config.env' });
 const port = process.env.PORT || 8080;
@@ -45,10 +45,10 @@ app.use('/js', express.static(path.resolve(__dirname, 'assets/js')));
 app.use('/', router);
 // app.use('/traders', traders.apis);
 app.listen(port, () => { 
-    console.log(`Server is running on http://localhost:${port}`)
-    adminUser();
- })
+    console.log(`Server is running on http://localhost:${port}`);
+    // adminUser();
+})
 
- function adminUser() {
+//  function adminUser() {
 
- }
+//  }

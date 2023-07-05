@@ -39,7 +39,7 @@ exports.updateCustomer = (req, res) => {
     }
     const customerid = req.params.id;
 
-    customerModel.findOneAndUpdate({'_id': customerid}, req.body)
+    customerModel.findOneAndUpdate({'_id': customerid}, req.body, { returnDocument: "after" })
     .then(updatedCustomerData => {
         if (!updatedCustomerData) {
             res.status(404).send({
@@ -70,7 +70,7 @@ exports.deleteCustomer = (req, res) => {
                 message: `Cannot delete customer with id ${customerid}`
             });
         } else {
-            res.send(removedCustomer);
+            res.send({ success: true, message: "Customer Deleted Successfully" });
         }
     })
     .catch(err => {

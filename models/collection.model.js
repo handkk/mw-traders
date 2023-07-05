@@ -1,22 +1,22 @@
 const mongoose = require('mongoose');
 // const schema = mongoose.Schema;
 
-var customer = new mongoose.Schema({
-    name: {
+var collection = new mongoose.Schema({
+    collection_date: {
+        type: Date,
+        required: true
+    },
+    customer_name: {
         type: String,
         required: true
     },
-    email: {
+    customer_id: {
         type: String,
         required: true
     },
-    phone_number: {
+    amount: {
         type: Number,
-        default: null
-    },
-    address: {
-        type: String,
-        default: ''
+        required: true
     },
     notes: {
         type: String,
@@ -32,6 +32,6 @@ var customer = new mongoose.Schema({
     }
 });
 
-const customerschema = mongoose.model('customers', customer);
+const collectionschema = mongoose.model('collections', collection);
 
-module.exports = customerschema;
+module.exports = collectionschema;

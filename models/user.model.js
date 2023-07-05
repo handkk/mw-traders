@@ -40,11 +40,11 @@ var user = new mongoose.Schema({
     },
     created_at: {
         type: Date,
-        default: Date.new
+        default: new Date()
     },
     modified_at: {
         type: Date,
-        default: Date.new
+        default: new Date()
     }
 });
 

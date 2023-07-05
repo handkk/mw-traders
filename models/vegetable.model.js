@@ -1,22 +1,16 @@
 const mongoose = require('mongoose');
 // const schema = mongoose.Schema;
 
-var customer = new mongoose.Schema({
+var vegetable = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
-    email: {
-        type: String,
-        required: true
-    },
-    phone_number: {
+    number: {
         type: Number,
-        default: null
-    },
-    address: {
-        type: String,
-        default: ''
+        required: true,
+        unique: true
     },
     notes: {
         type: String,
@@ -32,6 +26,6 @@ var customer = new mongoose.Schema({
     }
 });
 
-const customerschema = mongoose.model('customers', customer);
+const vegetableschema = mongoose.model('vegetables', vegetable);
 
-module.exports = customerschema;
+module.exports = vegetableschema;
