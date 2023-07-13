@@ -43,5 +43,6 @@ router.delete('/bill/:id', billController.deleteBill);
 // Collection apis
 router.post('/new-collection', collectionController.createCollection);
 router.post('/collections', collectionController.getCollections);
+router.delete('/collection/:id', collectionController.deleteCollection);
 
 module.exports = router;

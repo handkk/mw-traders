@@ -76,3 +76,45 @@ exports.createCollection = (req, res) => {
         });
     })
 }
+
+// Delete Collection
+exports.deleteCollection = (req, res) => {
+    if (!req.params.id) {
+        return res.status(400).send({message: 'Collection id param is required'});
+    }
+    const userid = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': userid,
+        'sessionId': sessionId
+    }
+    const id = req.params.id;
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            collectionModel.findOneAndRemove({'_id': id})
+            .then(data => {
+                if (!data) {
+                    res.status(404).send({
+                        message: `Cannot delete user with id ${id}`
+                    });
+                } else {
+                    res.send({ success: true, message: "Collection Deleted Successfully" });
+                }
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'delete operation is not occured'
+                });
+            })
+        } else {
+            res.status(500).send({
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'delete operation is not occured'
+        });
+    });   
+}
