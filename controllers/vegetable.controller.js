@@ -12,7 +12,7 @@ exports.getVegetables = (req, res) => {
     const page = req.body.skip ? req.body.skip : 1;
     userModel.findOne(userreq).then(user => {
         if (user) {
-            let count = vegetableModel.find({}).count();
+            let count = vegetableModel.count();
             console.log('\n count vegetables ', count, '\n');
             vegetableModel.find({}).sort({'modified_at': -1}).skip(page - 1).limit(pageSize).then(vegetableData => {
                 console.log('\n vegetableData ', JSON.stringify(vegetableData), '\n');
