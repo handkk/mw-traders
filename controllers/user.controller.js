@@ -20,37 +20,42 @@ exports.createUser = (req, res) => {
         res.status(400).send({message: 'payload is required'});
         return;
     }
-    const uuid = uuidv4();
-    req.body['userId'] = uuid;
-    console.log('26 create user enters body  ', JSON.stringify(req.body), '\n');
-    const user = new userModel(req.body);
-    user.save(user)
-    .then(data => {
-        console.log('user created data ', JSON.stringify(data), '\n');
-        res.send(data);
-        // userModel.findOne({'username': req.body.username}).then(userinfo => {
-        //     res.send(userinfo);
-        // }).catch(err => {
-        //     res.status(500).send({
-        //         message: err.message || 'user not found'
-        //     });
-        // })
-    })
-    .catch(err => {
+    if (!req.body.username) {
+        res.status(400).send({message: 'username is required'});
+        return;
+    }
+    userModel.find({'username': req.body.username}).then(foundUsers => {
+        if (foundUsers && foundUsers.length >= 1) {
+            res.status(500).send({
+                message: 'username is already exists'
+            });
+        } else {
+            const uuid = uuidv4();
+            req.body['userId'] = uuid;
+            const user = new userModel(req.body);
+            user.save(user)
+            .then(data => {
+                res.send(data);
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Save operation is not occured'
+                });
+            })
+        }
+    }).catch(err => {
         res.status(500).send({
-            message: err.message || 'Save operation is not occured'
+            message: err.message || 'user not found'
         });
-    })
+    });
 }
 
 // Update User Info
 exports.updateUser = (req, res) => {
-    console.log('update user enters body ', JSON.stringify(req.body), '\n');
     if (!req.body) {
         return res.status(400).send({message: 'Data to update can not be empty'});
     }
     const userid = req.params.id;
-    console.log('update user id ', userid, '\n');
 
     userModel.findOneAndUpdate({'_id': userid}, req.body, { returnDocument: "after" })
     .then(updatedUserData => {
@@ -140,7 +145,6 @@ exports.getUserInfo = (req, res) => {
 
 // Login
 exports.login = (req, res) => {
-    console.log('\n login req body ', JSON.stringify(req.body), '\n');
     if (!req.body.username && req.body.password) {
         return res.status(400).send({message: 'Username & Password is required'});
     }
@@ -154,25 +158,18 @@ exports.login = (req, res) => {
                 message: `Invalid credentials`
             });
         } else {
-            console.log('\n user data ', JSON.stringify(data), '\n');
             const userid = data._id;
             const uuid = uuidv4();
             const session = { sessionId: uuid }
-            console.log('\n user id ', userid, '\n');
-            console.log('\n user name ', username, '\n');
-            console.log('\n sessionid ', JSON.stringify(session), '\n');
             userModel.findOneAndUpdate({'username': username}, session).then(sessionupdated => {
-                console.log('\n user updated with session ', JSON.stringify(sessionupdated), '\n');
                 userModel.findOne({'username': username}).then(userinfo => {
                     res.send(userinfo);
                 }).catch(err => {
-                    // console.log('\n user updated with session err ', JSON.stringify(err), '\n');
                     res.status(500).send({
                         message: err.message || 'user not found'
                     });
                 })
             }).catch(err => {
-                console.log('\n user updated with session err ', JSON.stringify(err), '\n');
                 res.status(500).send({
                     message: err.message || 'Invalid credentials'
                 });
@@ -180,7 +177,6 @@ exports.login = (req, res) => {
         }
     })
     .catch(err => {
-        console.log('\n user not found catch err ', JSON.stringify(err), '\n');
         res.status(500).send({
             message: err.message || 'not able to get user info'
         });
@@ -189,7 +185,6 @@ exports.login = (req, res) => {
 
 // Logout
 exports.logout = (req, res) => {
-    console.log('\n logout req body ', JSON.stringify(req.body), '\n');
     if (!req.body.userId && !req.body.sessionId) {
         return res.status(400).send({message: 'userid & sessionid is required'});
     }
@@ -203,11 +198,8 @@ exports.logout = (req, res) => {
                 message: `User not found`
             });
         } else {
-            console.log('\n user data ', JSON.stringify(data), '\n');
             const session = { sessionId: '' };
-            console.log('\n sessionid ', JSON.stringify(session), '\n');
             userModel.findOneAndUpdate({'userId': userId}, session).then(sessionout => {
-                // console.log('\n user updated with session ', JSON.stringify(sessionupdated), '\n');
                 userModel.findOne({'userId': userId}).then(userinfo => {
                     res.send(userinfo);
                 }).catch(err => {
@@ -216,7 +208,6 @@ exports.logout = (req, res) => {
                     });
                 })
             }).catch(err => {
-                console.log('\n user updated with session err ', JSON.stringify(err), '\n');
                 res.status(500).send({
                     message: err.message || 'Invalid credentials'
                 });
@@ -224,7 +215,6 @@ exports.logout = (req, res) => {
         }
     })
     .catch(err => {
-        console.log('\n user not found catch err ', JSON.stringify(err), '\n');
         res.status(500).send({
             message: err.message || 'not able to get user info'
         });
