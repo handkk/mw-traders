@@ -8,9 +8,11 @@ exports.getVegetables = (req, res) => {
         'userId': req.body.userId,
         'sessionId': req.body.sessionId
     }
+    const pageSize = req.body.limit ? req.body.limit : 100;
+    const page = req.body.skip ? req.body.skip : 1;
     userModel.findOne(userreq).then(user => {
         if (user) {
-            vegetableModel.find({}).then(vegetableData => {
+            vegetableModel.find({}).sort({'modified_at': -1}).skip(page - 1).limit(pageSize).then(vegetableData => {
                 res.send(vegetableData);
             })
             .catch(err => {
