@@ -16,23 +16,25 @@ exports.getUsers = (req, res) => {
 
 // Create New User
 exports.createUser = (req, res) => {
-    console.log('create user enters body ', JSON.stringify(req.body), '\n');
     if (!req.body) {
         res.status(400).send({message: 'payload is required'});
         return;
     }
     const uuid = uuidv4();
     req.body['userId'] = uuid;
+    console.log('26 create user enters body  ', JSON.stringify(req.body), '\n');
     const user = new userModel(req.body);
     user.save(user)
     .then(data => {
-        userModel.findOne({'username': req.body.username}).then(userinfo => {
-            res.send(userinfo);
-        }).catch(err => {
-            res.status(500).send({
-                message: err.message || 'user not found'
-            });
-        })
+        console.log('user created data ', JSON.stringify(data), '\n');
+        res.send(data);
+        // userModel.findOne({'username': req.body.username}).then(userinfo => {
+        //     res.send(userinfo);
+        // }).catch(err => {
+        //     res.status(500).send({
+        //         message: err.message || 'user not found'
+        //     });
+        // })
     })
     .catch(err => {
         res.status(500).send({
