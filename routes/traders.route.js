@@ -9,11 +9,11 @@ const billController = require('../controllers/bill.controller');
 const collectionController = require('../controllers/collections.controller');
 
 // User apis
-router.get('/users', userController.getUsers);
-router.post('/user', userController.createUser);
-router.put('/user/:id', userController.updateUser);
-router.delete('/user/:id', userController.deleteUser);
-router.get('/user/:id', userController.getUserInfo);
+router.get('/allusers', userController.getUsers);
+router.post('/create_user', userController.createUser);
+router.put('/update_user/:id', userController.updateUser);
+router.delete('/remove_user/:id', userController.deleteUser);
+router.get('/user_info/:id', userController.getUserInfo);
 router.post('/login', userController.login);
 router.post('/logout', userController.logout);
 
