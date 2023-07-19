@@ -16,7 +16,7 @@ exports.getBills = (req, res) => {
             const limit = req.body.limit ? req.body.limit : 1000;
             const skip = req.body.skip ? (req.body.skip - 1) : 0;
             billModel.count().then(count => {
-                var query = farmerModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
+                var query = billModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
                 query.exec().then(billsData => {
                     const result = {
                         'data': billsData,
