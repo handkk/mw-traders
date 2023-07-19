@@ -77,7 +77,6 @@ exports.createBill = (req, res) => {
                             })
                             .then(customerData => {
                                 if (customerData) {
-                                    // res.send(farmerData);
                                     let billdata = {
                                         'customer_name': req.body.customer_name,
                                         'customer_id': req.body.customer_id,
@@ -86,29 +85,46 @@ exports.createBill = (req, res) => {
                                         'vegetable_id': req.body.vegetable_id,
                                         'vegetable_name': req.body.vegetable_name
                                     };
-                                    console.log('\n bill create req body ', JSON.stringify(req.body), '\n');
-                                    billModel.findOne(billdata).then(data => {
-                                        if (!data) {
-                                            if (req.body.unit_wise) {
-                                                req.body['total_amount'] = req.body.rate;
-                                            } else if (!req.body.unit_wise) {
-                                                req.body['total_amount'] = req.body.rate * 10;
-                                            }
-                                            const bill = new billModel(req.body);
-                                            bill.save(bill)
-                                            .then(newbilldata => {
-                                                res.send(newbilldata);
-                                            })
-                                            .catch(err => {
-                                                res.status(500).send({
-                                                    message: err.message || 'Save operation is not occured'
+                                    // console.log('\n bill create req body ', JSON.stringify(req.body), '\n');
+                                    
+                                    if (req.body.unit_wise) {
+                                        req.body['total_amount'] = req.body.rate;
+                                    } else if (!req.body.unit_wise) {
+                                        req.body['total_amount'] = req.body.rate * 10;
+                                    }
+                                    const bill = new billModel(req.body);
+                                    bill.save(bill)
+                                    .then(newbilldata => {
+                                        customerModel.findOne({'_id': billdata.customer_id}).then(customer_data => {
+                                            if (customer_data) {
+                                                console.log('\n customer data === ', JSON.stringify(customer_data), '\n');
+                                                const amount = customer_data.balance_amount + req.body.total_amount;
+                                                const balance_amount = { 'balance_amount': amount };
+                                                customerModel.updateOne({'_id': billdata.customer_id}, balance_amount).then(updateddata => {
+                                                    if (updateddata) {
+                                                        res.send(newbilldata);
+                                                    } else {
+                                                        res.status(403).send({
+                                                            message: 'Customer not found'
+                                                        });
+                                                    }
+                                                })
+                                                .catch(err => {
+                                                    res.status(500).send({
+                                                        message: err.message || 'Save operation is not occured'
+                                                    });
+                                                })
+                                            } else {
+                                                res.status(403).send({
+                                                    message: 'Customer not found'
                                                 });
-                                            })
-                                        } else {
-                                            res.status(403).send({
-                                                message: 'Bill already exist'
+                                            }
+                                        })
+                                        .catch(err => {
+                                            res.status(500).send({
+                                                message: err.message || 'Save operation is not occured'
                                             });
-                                        }
+                                        })
                                     })
                                     .catch(err => {
                                         res.status(500).send({
