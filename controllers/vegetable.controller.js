@@ -12,22 +12,29 @@ exports.getVegetables = (req, res) => {
     const page = req.body.skip ? req.body.skip : 1;
     userModel.findOne(userreq).then(user => {
         if (user) {
-            let count = vegetableModel.count();
-            console.log('\n count vegetables ', count, '\n');
-            vegetableModel.find({}).sort({'modified_at': -1}).skip(page - 1).limit(pageSize).then(vegetableData => {
-                console.log('\n vegetableData ', JSON.stringify(vegetableData), '\n');
-                const result = {
-                    'data': vegetableData,
-                    'total': count
-                };
-                console.log('\n vegetableData result ', JSON.stringify(result), '\n');
-                res.send(result);
+            vegetableModel.count().then(count => {
+                console.log('\n count vegetables ', count, '\n');
+                res.send(count);
             })
             .catch(err => {
                 res.status(500).send({
-                    message: err.message || 'Not able to fetch the vegetables'
+                    message: err.message || 'Not able to fetch the vegetables count'
                 })
             })
+            // vegetableModel.find({}).sort({'modified_at': -1}).skip(page - 1).limit(pageSize).then(vegetableData => {
+            //     console.log('\n vegetableData ', JSON.stringify(vegetableData), '\n');
+            //     const result = {
+            //         'data': vegetableData,
+            //         'total': count.count()
+            //     };
+            //     console.log('\n vegetableData result ', JSON.stringify(result), '\n');
+            //     res.send(result);
+            // })
+            // .catch(err => {
+            //     res.status(500).send({
+            //         message: err.message || 'Not able to fetch the vegetables'
+            //     })
+            // })
         } else {
             res.status(500).send({
                 message: 'User session ended, Please login again'
