@@ -8,27 +8,42 @@ exports.getVegetables = (req, res) => {
         'userId': req.body.userId,
         'sessionId': req.body.sessionId
     }
-    const pageSize = req.body.limit ? req.body.limit : 100;
-    const page = req.body.skip ? req.body.skip : 1;
+    const limit = req.body.limit ? req.body.limit : 100;
+    const skip = req.body.skip ? (req.body.skip - 1) : 0;
     userModel.findOne(userreq).then(user => {
         if (user) {
-            vegetableModel.count().then(count => {
-                vegetableModel.find({}).sort({'modified_at': -1}).skip(page - 1).limit(pageSize).then(vegetableData => {
-                    const result = {
-                        'data': vegetableData,
-                        'total': count
-                    };
-                    res.send(result);
-                })
-                .catch(err => {
-                    res.status(500).send({
-                        message: err.message || 'Not able to fetch the vegetables'
-                    })
-                })
+            // vegetableModel.count().then(count => {
+            //     vegetableModel.find({}).sort({'modified_at': -1}).skip(page - 1).limit(pageSize).then(vegetableData => {
+            //         const result = {
+            //             'data': vegetableData,
+            //             'total': count
+            //         };
+            //         res.send(result);
+            //     })
+            //     .catch(err => {
+            //         res.status(500).send({
+            //             message: err.message || 'Not able to fetch the vegetables'
+            //         })
+            //     })
+            // })
+            // .catch(err => {
+            //     res.status(500).send({
+            //         message: err.message || 'Not able to fetch the vegetables count'
+            //     })
+            // })
+            console.log('\n skip === ', skip);
+            console.log('\n limit === ', limit);
+            vegetableModel.find({}).sort({'modified_at': -1}).skip(skip).limit(limit).then(vegetableData => {
+                console.log('\n vegetableData === ', JSON.stringify(vegetableData));
+                const result = {
+                    'data': vegetableData,
+                    'total': 12
+                };
+                res.send(result);
             })
             .catch(err => {
                 res.status(500).send({
-                    message: err.message || 'Not able to fetch the vegetables count'
+                    message: err.message || 'Not able to fetch the vegetables'
                 })
             })
         } else {
