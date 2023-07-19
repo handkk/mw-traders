@@ -13,8 +13,22 @@ exports.getBills = (req, res) => {
     }
     userModel.findOne(userreq).then(user => {
         if (user) {
-            billModel.find({}).then(data => {
-                res.send(data);
+            const limit = req.body.limit ? req.body.limit : 1000;
+            const skip = req.body.skip ? (req.body.skip - 1) : 0;
+            billModel.count().then(count => {
+                var query = farmerModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
+                query.exec().then(billsData => {
+                    const result = {
+                        'data': billsData,
+                        'total': count
+                    };
+                    res.send(result);
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Not able to fetch the bills'
+                    })
+                })
             })
             .catch(err => {
                 res.status(500).send({

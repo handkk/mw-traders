@@ -4,8 +4,22 @@ const { v4: uuidv4 } = require('uuid');
 
 // Get Users
 exports.getUsers = (req, res) => {
-    userModel.find({}).then(usersData => {
-        res.send(usersData);
+    const limit = req.body.limit ? req.body.limit : 1000;
+    const skip = req.body.skip ? (req.body.skip - 1) : 0;
+    userModel.count().then(count => {
+        var query = userModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
+        query.exec().then(usersData => {
+            const result = {
+                'data': usersData,
+                'total': count
+            };
+            res.send(result);
+        })
+        .catch(err => {
+            res.status(500).send({
+                message: err.message || 'Not able to fetch the users'
+            })
+        })
     })
     .catch(err => {
         res.status(500).send({

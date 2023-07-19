@@ -3,8 +3,22 @@ var farmerModel = require('../models/farmer.model');
 
 // Get Farmers
 exports.getFarmers = (req, res) => {
-    farmerModel.find({}).then(farmerData => {
-        res.send(farmerData);
+    const limit = req.body.limit ? req.body.limit : 1000;
+    const skip = req.body.skip ? (req.body.skip - 1) : 0;
+    farmerModel.count().then(count => {
+        var query = farmerModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
+        query.exec().then(farmerData => {
+            const result = {
+                'data': farmerData,
+                'total': count
+            };
+            res.send(result);
+        })
+        .catch(err => {
+            res.status(500).send({
+                message: err.message || 'Not able to fetch the farmers'
+            })
+        })
     })
     .catch(err => {
         res.status(500).send({

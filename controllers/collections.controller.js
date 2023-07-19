@@ -14,12 +14,21 @@ exports.getCollections = (req, res) => {
     }
     userModel.findOne(userreq).then(user => {
         if (user) {
-            collectionModel.find({}).then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: err.message || 'Not able to fetch the collections'
+            const limit = req.body.limit ? req.body.limit : 1000;
+            const skip = req.body.skip ? (req.body.skip - 1) : 0;
+            collectionModel.count().then(count => {
+                var query = collectionModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
+                query.exec().then(collectionsData => {
+                    const result = {
+                        'data': collectionsData,
+                        'total': count
+                    };
+                    res.send(result);
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Not able to fetch the collections'
+                    })
                 })
             })
         } else {

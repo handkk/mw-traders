@@ -3,8 +3,22 @@ var customerModel = require('../models/customer.model');
 
 // Get Customers
 exports.getCustomers = (req, res) => {
-    customerModel.find({}).then(customersData => {
-        res.send(customersData);
+    const limit = req.body.limit ? req.body.limit : 1000;
+    const skip = req.body.skip ? (req.body.skip - 1) : 0;
+    customerModel.count().then(count => {
+        var query = customerModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
+        query.exec().then(customersData => {
+            const result = {
+                'data': customersData,
+                'total': count
+            };
+            res.send(result);
+        })
+        .catch(err => {
+            res.status(500).send({
+                message: err.message || 'Not able to fetch the customers'
+            })
+        })
     })
     .catch(err => {
         res.status(500).send({
