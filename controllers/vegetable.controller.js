@@ -12,39 +12,24 @@ exports.getVegetables = (req, res) => {
     const skip = req.body.skip ? (req.body.skip - 1) : 0;
     userModel.findOne(userreq).then(user => {
         if (user) {
-            // vegetableModel.count().then(count => {
-            //     vegetableModel.find({}).sort({'modified_at': -1}).skip(page - 1).limit(pageSize).then(vegetableData => {
-            //         const result = {
-            //             'data': vegetableData,
-            //             'total': count
-            //         };
-            //         res.send(result);
-            //     })
-            //     .catch(err => {
-            //         res.status(500).send({
-            //             message: err.message || 'Not able to fetch the vegetables'
-            //         })
-            //     })
-            // })
-            // .catch(err => {
-            //     res.status(500).send({
-            //         message: err.message || 'Not able to fetch the vegetables count'
-            //     })
-            // })
-            console.log('\n skip === ', skip);
-            console.log('\n limit === ', limit);
-            var query = vegetableModel.find({}).skip(skip * limit).limit(limit);
-            query.exec().then(vegetableData => {
-                console.log('\n vegetableData === ', JSON.stringify(vegetableData));
-                const result = {
-                    'data': vegetableData,
-                    'total': 12
-                };
-                res.send(result);
+            vegetableModel.count().then(count => {
+                var query = vegetableModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
+                query.exec().then(vegetableData => {
+                    const result = {
+                        'data': vegetableData,
+                        'total': count
+                    };
+                    res.send(result);
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Not able to fetch the vegetables'
+                    })
+                })
             })
             .catch(err => {
                 res.status(500).send({
-                    message: err.message || 'Not able to fetch the vegetables'
+                    message: err.message || 'Not able to fetch the vegetables count'
                 })
             })
         } else {
