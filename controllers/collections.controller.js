@@ -67,7 +67,40 @@ exports.createCollection = (req, res) => {
             const collection = new collectionModel(req.body);
             collection.save(collection)
             .then(newbilldata => {
-                res.send(newbilldata);
+                customerModel.findOne({'_id': collectiondata.customer_id}).then(customer_data => {
+                    if (customer_data) {
+                        console.log('\n customer data === ', JSON.stringify(customer_data), '\n');
+                        const amount = customer_data.balance_amount > 0 ? customer_data.balance_amount - req.body.amount : 0;
+                        const collected_amount = customer_data.collected_amount + req.body.amount;
+                        const update_amount = { 
+                            'balance_amount': amount,
+                            'collected_amount': collected_amount
+                        };
+                        customerModel.updateOne({'_id': collectiondata.customer_id}, update_amount).then(updateddata => {
+                            if (updateddata) {
+                                res.send(newbilldata);
+                            } else {
+                                res.status(403).send({
+                                    message: 'Customer details not updated'
+                                });
+                            }
+                        })
+                        .catch(err => {
+                            res.status(500).send({
+                                message: err.message || 'Update operation is not occured'
+                            });
+                        })
+                    } else {
+                        res.status(403).send({
+                            message: 'Customer not found'
+                        });
+                    }
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Save operation is not occured'
+                    });
+                })
             })
             .catch(err => {
                 res.status(500).send({
