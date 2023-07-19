@@ -33,7 +33,8 @@ exports.getVegetables = (req, res) => {
             // })
             console.log('\n skip === ', skip);
             console.log('\n limit === ', limit);
-            vegetableModel.find({}).skip(skip).limit(limit).then(vegetableData => {
+            var query = vegetableModel.find({}).skip(skip * limit).limit(limit);
+            query.exec().then(vegetableData => {
                 console.log('\n vegetableData === ', JSON.stringify(vegetableData));
                 const result = {
                     'data': vegetableData,
