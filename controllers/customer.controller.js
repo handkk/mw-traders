@@ -112,8 +112,10 @@ exports.customerBalanceStatement = (req, res) => {
     `;
     userModel.findOne(userreq).then(user => {
         if (user) {
+            console.log('\n user found === ', JSON.stringify(user), '\n');
             customerModel.find({}).then(customers => {
                 const cust = customers;
+                console.log('\n customers found === ', JSON.stringify(cust), '\n');
                 if (cust) {
                     cust.forEach(c => {
                         table_data =+ `
@@ -127,7 +129,8 @@ exports.customerBalanceStatement = (req, res) => {
                     table_data =+ `
                     </tbody></table>
                     `
-                    res.send(table_data);
+                    console.log('\n table_data is === ', table_data, '\n');
+                    res.send({table: table_data});
                 }
             })
             .catch(err => {
