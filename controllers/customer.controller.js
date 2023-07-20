@@ -1,5 +1,6 @@
 'use strict';
 var customerModel = require('../models/customer.model');
+var userModel = require('../models/user.model');
 
 // Get Customers
 exports.getCustomers = (req, res) => {
@@ -92,4 +93,57 @@ exports.deleteCustomer = (req, res) => {
             message: err.message || 'delete operation is not occured'
         });
     })   
+}
+
+// Balance Statement
+exports.customerBalanceStatement = (req, res) => {
+    const userid = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': userid,
+        'sessionId': sessionId
+    }
+    var table_data = `
+    <table><thead><tr>
+                        <th>Name</th>
+                        <th>Balance Amount</th>
+                        <th>Paid Amount</th>
+                        </tr></thead><tbody>
+    `;
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            customerModel.find({}).then(customers => {
+                const cust = customers;
+                if (cust) {
+                    cust.forEach(c => {
+                        table_data =+ `
+                        <tr>
+                        <td>${c.name}</td>
+                        <td>${c.balance_amount}</td>
+                        <td>${c.collected_amount}</td>
+                        </tr>
+                        `
+                    });
+                    table_data =+ `
+                    </tbody></table>
+                    `
+                    res.send(table_data);
+                }
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'customers not found'
+                });
+            })
+        } else {
+            res.status(500).send({
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'User not found'
+        });
+    });   
 }

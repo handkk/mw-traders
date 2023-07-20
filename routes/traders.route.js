@@ -28,6 +28,7 @@ router.post('/customers', customerController.getCustomers);
 router.post('/customer', customerController.createCustomer);
 router.put('/customer/:id', customerController.updateCustomer);
 router.delete('/customer/:id', customerController.deleteCustomer);
+router.post('/balance_statement', customerController.customerBalanceStatement);
 
 // Vegetable apis
 router.post('/vegetable', vegetableController.createVegetable);
