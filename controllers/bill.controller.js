@@ -90,7 +90,7 @@ exports.createBill = (req, res) => {
                                     if (req.body.unit_wise) {
                                         req.body['total_amount'] = req.body.rate;
                                     } else if (!req.body.unit_wise) {
-                                        req.body['total_amount'] = req.body.rate * 10;
+                                        req.body['total_amount'] = req.body.rate * parseInt(req.body.quantity);
                                     }
                                     const bill = new billModel(req.body);
                                     bill.save(bill)
