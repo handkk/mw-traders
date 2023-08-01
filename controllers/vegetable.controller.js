@@ -47,9 +47,12 @@ exports.getVegetables = (req, res) => {
 
 // Create New Vegetable
 exports.createVegetable = (req, res) => {
-    // console.log('create user enters body ', JSON.stringify(req.body), '\n');
     if (!req.body) {
         res.status(400).send({message: 'payload is required'});
+        return;
+    }
+    if (req.body && !req.body.name) {
+        res.status(400).send({message: 'vegetable name is required'});
         return;
     }
     const name = req.body.name;
@@ -59,16 +62,20 @@ exports.createVegetable = (req, res) => {
     }
     userModel.findOne(userreq).then(user => {
         if (user) {
-            console.log('\n user found ', JSON.stringify(user), '\n');
-            vegetableModel.findOne({
-                $or: [ {'number': req.body.number, 'name': req.body.name}, {'number': req.body.number}, {'name': req.body.name} ]
-            }).then(vegetableData => {
+            vegetableModel.findOne({ 'name': req.body.name }).then(vegetableData => {
                 if (!vegetableData) {
-                    console.log('\n vegetableData ', JSON.stringify(vegetableData), '\n');
-                    const vegetable = new vegetableModel(req.body);
-                    vegetable.save(vegetable)
-                    .then(data => {
-                        res.send(data);
+                    vegetableModel.count().then(count => {
+                        req.body['number'] = count + 1;
+                        const vegetable = new vegetableModel(req.body);
+                        vegetable.save(vegetable)
+                        .then(data => {
+                            res.send(data);
+                        })
+                        .catch(err => {
+                            res.status(500).send({
+                                message: err.message || 'Save operation is not occured'
+                            });
+                        })
                     })
                     .catch(err => {
                         res.status(500).send({
@@ -98,7 +105,6 @@ exports.createVegetable = (req, res) => {
 
 // Update Vegetable Info
 exports.updateVegetable = (req, res) => {
-    // console.log('update user enters body ', JSON.stringify(req.body), '\n');
     if (!req.body) {
         return res.status(400).send({message: 'Data to update can not be empty'});
     }
