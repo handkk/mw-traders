@@ -6,10 +6,6 @@ var customer = new mongoose.Schema({
         type: String,
         required: true
     },
-    email: {
-        type: String,
-        required: true
-    },
     phone_number: {
         type: Number,
         default: null
