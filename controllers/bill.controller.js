@@ -87,9 +87,9 @@ exports.createBill = (req, res) => {
                                     };
                                     // console.log('\n bill create req body ', JSON.stringify(req.body), '\n');
                                     
-                                    if (req.body.unit_wise) {
-                                        req.body['total_amount'] = req.body.rate;
-                                    } else if (!req.body.unit_wise) {
+                                    if (!req.body.unit_wise) {
+                                        req.body['total_amount'] = (req.body.rate / 10) * req.body.quantity;
+                                    } else if (req.body.unit_wise) {
                                         req.body['total_amount'] = req.body.rate * req.body.quantity;
                                     }
                                     req.body['created_at'] = new Date();
