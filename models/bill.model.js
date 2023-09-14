@@ -51,12 +51,10 @@ var bill = new mongoose.Schema({
         required: true
     },
     created_at: {
-        type: Date,
-        default: new Date()
+        type: Date
     },
     modified_at: {
-        type: Date,
-        default: new Date()
+        type: Date
     }
 });
 

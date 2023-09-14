@@ -92,6 +92,8 @@ exports.createBill = (req, res) => {
                                     } else if (!req.body.unit_wise) {
                                         req.body['total_amount'] = req.body.rate * parseInt(req.body.quantity);
                                     }
+                                    req.body['created_at'] = new Date();
+                                    req.body['modified_at'] = new Date();
                                     const bill = new billModel(req.body);
                                     bill.save(bill)
                                     .then(newbilldata => {
@@ -230,6 +232,7 @@ exports.updateBill = (req, res) => {
     userModel.findOne(userreq).then(user => {
         if (user) {
             let billReqBody = req.body;
+            billReqBody['modified_at'] = new Date();
             billModel.findOneAndUpdate({'_id': id}, billReqBody, { returnDocument: "after" })
             .then(updatedBillData => {
                 if (!updatedBillData) {
