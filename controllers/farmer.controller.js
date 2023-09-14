@@ -35,6 +35,8 @@ exports.createFarmer = (req, res) => {
         return;
     }
 
+    req.body['created_at'] = new Date();
+    req.body['modified_at'] = new Date();
     const farmer = new farmerModel(req.body);
     farmer.save(farmer)
     .then(data => {
@@ -54,6 +56,7 @@ exports.updateFarmer = (req, res) => {
         return res.status(400).send({message: 'Data to update can not be empty'});
     }
     const id = req.params.id;
+    req.body['modified_at'] = new Date();
     // console.log('update user id ', userid, '\n');
 
     farmerModel.findOneAndUpdate({'_id': id}, req.body, { returnDocument: "after" })

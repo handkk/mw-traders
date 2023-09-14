@@ -64,6 +64,8 @@ exports.createCollection = (req, res) => {
                 'customer_name': req.body.customer_name,
                 'customer_id': req.body.customer_id
             };
+            req.body['created_at'] = new Date();
+            req.body['modified_at'] = new Date();
             const collection = new collectionModel(req.body);
             collection.save(collection)
             .then(newbilldata => {

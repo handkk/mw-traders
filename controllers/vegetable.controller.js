@@ -60,6 +60,8 @@ exports.createVegetable = (req, res) => {
         'userId': req.body.userId,
         'sessionId': req.body.sessionId
     }
+    req.body['created_at'] = new Date();
+    req.body['modified_at'] = new Date();
     userModel.findOne(userreq).then(user => {
         if (user) {
             vegetableModel.findOne({ 'name': req.body.name }).then(vegetableData => {
@@ -129,6 +131,7 @@ exports.updateVegetable = (req, res) => {
             if (req.body.notes) {
                 vegetableReqBody['notes'] = req.body.notes;
             }
+            vegetableReqBody['modified_at'] = new Date();
             vegetableModel.findOneAndUpdate({'_id': id}, vegetableReqBody, { returnDocument: "after" })
             .then(updatedVegetableData => {
                 if (!updatedVegetableData) {

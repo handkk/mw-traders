@@ -27,12 +27,10 @@ var customer = new mongoose.Schema({
         default: 0
     },
     created_at: {
-        type: Date,
-        default: new Date()
+        type: Date
     },
     modified_at: {
-        type: Date,
-        default: new Date()
+        type: Date
     }
 });
 

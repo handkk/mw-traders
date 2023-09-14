@@ -35,6 +35,8 @@ exports.createCustomer = (req, res) => {
         return;
     }
 
+    req.body['created_at'] = new Date();
+    req.body['modified_at'] = new Date();
     const customer = new customerModel(req.body);
     customer.save(customer)
     .then(data => {
@@ -53,6 +55,7 @@ exports.updateCustomer = (req, res) => {
         return res.status(400).send({message: 'Data to update can not be empty'});
     }
     const customerid = req.params.id;
+    req.body['modified_at'] = new Date();
 
     customerModel.findOneAndUpdate({'_id': customerid}, req.body, { returnDocument: "after" })
     .then(updatedCustomerData => {
@@ -93,6 +96,22 @@ exports.deleteCustomer = (req, res) => {
             message: err.message || 'delete operation is not occured'
         });
     })   
+}
+
+// Day Collections of Customer
+exports.dayCollections = (req, res) => {
+    const userid = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': userid,
+        'sessionId': sessionId
+    }
+    userModel.findOne(userreq).then(user => {})
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'User not found'
+        });
+    });
 }
 
 // Balance Statement

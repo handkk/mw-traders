@@ -23,12 +23,10 @@ var farmer = new mongoose.Schema({
         default: ''
     },
     created_at: {
-        type: Date,
-        default: new Date()
+        type: Date
     },
     modified_at: {
-        type: Date,
-        default: new Date()
+        type: Date
     }
 });
 
