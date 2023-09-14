@@ -212,3 +212,48 @@ exports.deleteBill = (req, res) => {
         });
     });   
 }
+
+// Update Bill
+exports.updateBill = (req, res) => {
+    if (!req.body) {
+        return res.status(400).send({message: 'Data to update can not be empty'});
+    }
+    const id = req.params.id;
+    const userid = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': userid,
+        'sessionId': sessionId
+    }
+    delete req.body['userId'];
+    delete req.body['sessionId'];
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            let billReqBody = req.body;
+            billModel.findOneAndUpdate({'_id': id}, billReqBody, { returnDocument: "after" })
+            .then(updatedBillData => {
+                if (!updatedBillData) {
+                    res.status(404).send({
+                        message: `Cannot update bill with id ${id}`
+                    });
+                } else {
+                    res.send(updatedBillData);
+                }
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Update operation is not occured'
+                });
+            })
+        } else {
+            res.status(500).send({
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'Update operation is not occured'
+        });
+    })
+}

@@ -40,6 +40,7 @@ router.delete('/vegetable/:id', vegetableController.deleteVegetable);
 router.post('/bills', billController.getBills);
 router.post('/new-bill', billController.createBill);
 router.delete('/bill/:id', billController.deleteBill);
+router.put('/update-bill/:id', billController.updateBill);
 
 // Collection apis
 router.post('/new-collection', collectionController.createCollection);
