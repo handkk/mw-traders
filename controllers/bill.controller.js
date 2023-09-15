@@ -272,6 +272,8 @@ exports.updateBill = (req, res) => {
                                                     // let last_amount_updated = 400;
                                                     // let total_amount = 40;
                                                     // let new_amount = 0;
+                                                    console.log('\n customer_data: ', JSON.stringify(customer_data), '\n');
+                                                    console.log('\n billReqBody: ', JSON.stringify(billReqBody), '\n');
                                                     let amount;
                                                     if (customer_data.last_amount_updated > billReqBody.total_amount) {
                                                         const tmp_amount1 = customer_data.last_amount_updated - billReqBody.total_amount;
@@ -285,7 +287,7 @@ exports.updateBill = (req, res) => {
                                                         amount = customer_data.balance_amount;
                                                     }
                                                     // const amount = customer_data.balance_amount + (req.body.total_amount - customer_data.last_amount_updated);
-                                                    const balance_amount = { 'balance_amount': amount };
+                                                    const balance_amount = { 'balance_amount': amount, 'last_amount_updated': billReqBody.total_amount };
                                                     customerModel.updateOne({'_id': billdata.customer_id}, balance_amount).then(updateddata => {
                                                         if (updateddata) {
                                                             res.send(updatedBillData);
