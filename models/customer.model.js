@@ -18,6 +18,10 @@ var customer = new mongoose.Schema({
         type: String,
         default: ''
     },
+    last_amount_updated: {
+        type: Number,
+        default: 0
+    },
     balance_amount: {
         type: Number,
         default: 0

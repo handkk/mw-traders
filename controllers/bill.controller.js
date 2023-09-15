@@ -101,7 +101,7 @@ exports.createBill = (req, res) => {
                                             if (customer_data) {
                                                 console.log('\n customer data === ', JSON.stringify(customer_data), '\n');
                                                 const amount = customer_data.balance_amount + req.body.total_amount;
-                                                const balance_amount = { 'balance_amount': amount };
+                                                const balance_amount = { 'balance_amount': amount, 'last_amount_updated': req.body.total_amount };
                                                 customerModel.updateOne({'_id': billdata.customer_id}, balance_amount).then(updateddata => {
                                                     if (updateddata) {
                                                         res.send(newbilldata);
@@ -231,16 +231,113 @@ exports.updateBill = (req, res) => {
     delete req.body['sessionId'];
     userModel.findOne(userreq).then(user => {
         if (user) {
-            let billReqBody = req.body;
-            billReqBody['modified_at'] = new Date();
-            billModel.findOneAndUpdate({'_id': id}, billReqBody, { returnDocument: "after" })
-            .then(updatedBillData => {
-                if (!updatedBillData) {
-                    res.status(404).send({
-                        message: `Cannot update bill with id ${id}`
-                    });
+            vegetableModel.findOne({
+                '_id': req.body.vegetable_id, 'name': req.body.vegetable_name
+            }).then(vegetableData => {
+                if (vegetableData) {
+                    farmerModel.findOne({
+                        'name': req.body.farmer_name, '_id': req.body.farmer_id
+                    }).then(farmerData => {
+                        if (farmerData) {
+                            customerModel.findOne({
+                                'name': req.body.customer_name, '_id': req.body.customer_id
+                            }).then(customerData => {
+                                if (customerData) {
+                                    let billdata = {
+                                        'customer_name': req.body.customer_name,
+                                        'customer_id': req.body.customer_id,
+                                        'farmer_name': req.body.farmer_name,
+                                        'farmer_id': req.body.farmer_id,
+                                        'vegetable_id': req.body.vegetable_id,
+                                        'vegetable_name': req.body.vegetable_name
+                                    };
+                                    if (!req.body.unit_wise) {
+                                        req.body['total_amount'] = (req.body.rate / 10) * req.body.quantity;
+                                    } else if (req.body.unit_wise) {
+                                        req.body['total_amount'] = req.body.rate * req.body.quantity;
+                                    }
+                                    let billReqBody = req.body;
+                                    billReqBody['modified_at'] = new Date();
+                                    billModel.findOneAndUpdate({'_id': id}, billReqBody, { returnDocument: "after" })
+                                    .then(updatedBillData => {
+                                        if (!updatedBillData) {
+                                            res.status(404).send({
+                                                message: `Cannot update bill with id ${id}`
+                                            });
+                                        } else {
+                                            customerModel.findOne({'_id': billdata.customer_id}).then(customer_data => {
+                                                if (customer_data) {
+                                                    // 
+                                                    // let balance_amount = 2300;
+                                                    // let last_amount_updated = 400;
+                                                    // let total_amount = 40;
+                                                    // let new_amount = 0;
+                                                    let amount;
+                                                    if (customer_data.last_amount_updated > billReqBody.total_amount) {
+                                                        const tmp_amount1 = customer_data.last_amount_updated - billReqBody.total_amount;
+                                                        amount = customer_data.balance_amount - tmp_amount1;
+                                                    }
+                                                    if (customer_data.last_amount_updated < billReqBody.total_amount) {
+                                                        const tmp_amount2 = billReqBody.total_amount - customer_data.last_amount_updated;
+                                                        amount = customer_data.balance_amount + tmp_amount2;
+                                                    }
+                                                    if (customer_data.last_amount_updated === billReqBody.total_amount) {
+                                                        amount = customer_data.balance_amount;
+                                                    }
+                                                    // const amount = customer_data.balance_amount + (req.body.total_amount - customer_data.last_amount_updated);
+                                                    const balance_amount = { 'balance_amount': amount };
+                                                    customerModel.updateOne({'_id': billdata.customer_id}, balance_amount).then(updateddata => {
+                                                        if (updateddata) {
+                                                            res.send(updatedBillData);
+                                                        } else {
+                                                            res.status(403).send({
+                                                                message: 'Customer not found'
+                                                            });
+                                                        }
+                                                    })
+                                                    .catch(err => {
+                                                        res.status(500).send({
+                                                            message: err.message || 'Save operation is not occured'
+                                                        });
+                                                    })
+                                                } else {
+                                                    res.status(403).send({
+                                                        message: 'Customer not found'
+                                                    });
+                                                }
+                                            })
+                                            .catch(err => {
+                                                res.status(500).send({
+                                                    message: err.message || 'Save operation is not occured'
+                                                });
+                                            })
+                                        }
+                                    })
+                                    .catch(err => {
+                                        res.status(500).send({
+                                            message: err.message || 'Update operation is not occured'
+                                        });
+                                    })
+                                } else {
+                                    res.status(403).send({message: `Customer details not found`});
+                                }
+                            })
+                            .catch(err => {
+                                res.status(500).send({
+                                    message: err.message || 'Save operation is not occured'
+                                });
+                            })
+                        } else {
+                            res.status(403).send({message: `Farmer details not found`})
+                        }
+                    })
+                    .catch(err => {
+                        res.status(500).send({
+                            message: err.message || 'Save operation is not occured'
+                        });
+                    })
                 } else {
-                    res.send(updatedBillData);
+                    res.status(403).send({message: `Vegetable details not found`})
                 }
             })
             .catch(err => {
