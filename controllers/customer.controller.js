@@ -137,9 +137,13 @@ exports.dayBills = (req, res) => {
                     doc.table(table);
                     res.setHeader('Content-Type', 'application/pdf');
                     res.setHeader('Content-Disposition', 'attachment; filename=quote.pdf');
-                    doc.pipe(res);
-                    console.log('\n 6 === ');
-                    doc.end();
+                    // doc.pipe(res);
+                    res.getBase64((data) => {
+                        const download = Buffer.from(data.String('utf-8'), 'base64');
+                        res.send(download);
+                    })
+                    console.log('\n 6 === res ', res);
+                    // doc.end();
                     // await res.send(doc);
                 } else {
                     res.send([]);
