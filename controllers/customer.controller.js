@@ -113,25 +113,29 @@ exports.dayBills = (req, res) => {
     const billdate = req.body.bill_date + 'T00:00:00.000Z';
     userModel.findOne(userreq).then(user => {
         if (user) {
-            billModel.find({ 'bill_date': billdate }).then(bills => {
+            billModel.find({ 'bill_date': billdate }).then(async bills => {
                 if (bills) {
+                    console.log('\n bills: res === ', JSON.stringify(bills));
                     // init document
                     let doc = new PDFDocument({ margin: 30, size: 'A4' });
                     // save document
-                    doc.pipe(fs.createWriteStream("./document.pdf"));
+                    console.log('\n 1 === ');
+                    doc.pipe(fs.createWriteStream("document.pdf"));
                     ;(async function createTable(){
+                        console.log('\n 2 === ');
                         // table
                         const table = { 
-                          title: '',
-                          headers: [
-                            { label: "Customer Name", property: 'customer_name', width: 60, renderer: null },
-                            { label: "Today Bill", property: 'total_amount', width: 150, renderer: null }, 
-                            { label: "Balance", property: 'rate', width: 100, renderer: null }, 
-                            { label: "Paid", property: 'price2', width: 100, renderer: null }
-                          ],
-                          datas: bills,
-                          rows: [ /* or simple data */ ],
+                            title: '',
+                            headers: [
+                                { label: "Customer Name", property: 'customer_name', width: 60, renderer: null },
+                                { label: "Today Bill", property: 'total_amount', width: 150, renderer: null }, 
+                                { label: "Balance", property: 'rate', width: 100, renderer: null }, 
+                                { label: "Paid", property: 'price2', width: 100, renderer: null }
+                            ],
+                            datas: bills,
+                            rows: [ /* or simple data */ ],
                         };
+                        console.log('\n 3 table: === ', JSON.stringify(table));
                     
                         // the magic (async/await)
                         await doc.table(table, { /* options */ });
@@ -143,9 +147,12 @@ exports.dayBills = (req, res) => {
                         // doc.pipe(res);
                     
                         // done!
+                        console.log('\n 4 === ');
                         await doc.end();
-                        await res.send(doc);
+                        console.log('\n 5 === ');
                     })();
+                    console.log('\n 6 === ');
+                    await res.send(doc);
                 } else {
                     res.send([]);
                 }
