@@ -138,6 +138,7 @@ exports.dayBills = (req, res) => {
                     doc.pipe(res);
                     console.log('\n 6 === ');
                     doc.end();
+                    res.status(200).send(doc);
                     // await res.send(doc);
                 } else {
                     res.send([]);
