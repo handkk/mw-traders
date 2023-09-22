@@ -135,6 +135,8 @@ exports.dayBills = (req, res) => {
                     };
                     console.log('\n 3 table: === ', JSON.stringify(table));
                     doc.table(table);
+                    res.setHeader('Content-Type', 'application/pdf');
+                    res.setHeader('Content-Disposition', 'attachment; filename=quote.pdf');
                     doc.pipe(res);
                     console.log('\n 6 === ');
                     doc.end();
