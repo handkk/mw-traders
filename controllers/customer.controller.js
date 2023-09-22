@@ -1,6 +1,7 @@
 'use strict';
 var customerModel = require('../models/customer.model');
 var userModel = require('../models/user.model');
+var billModel = require('../models/bill.model');
 
 // Get Customers
 exports.getCustomers = (req, res) => {
@@ -99,14 +100,36 @@ exports.deleteCustomer = (req, res) => {
 }
 
 // Day Collections of Customer
-exports.dayCollections = (req, res) => {
+exports.dayBills = (req, res) => {
     const userid = req.body.userId;
     const sessionId = req.body.sessionId;
     const userreq = {
         'userId': userid,
         'sessionId': sessionId
     }
-    userModel.findOne(userreq).then(user => {})
+    
+    const billdate = req.body.bill_date + 'T00:00:00.000Z';
+    // const billdate = '2023-09-20' + 'T00:00:00.000Z';
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            billModel.find({ 'bill_date': billdate }).then(bills => {
+                if (bills) {
+                    res.send(bills);
+                } else {
+                    res.send([]);
+                }
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Bills not found'
+                });
+            });
+        } else {
+            res.status(500).send({
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
     .catch(err => {
         res.status(500).send({
             message: err.message || 'User not found'
