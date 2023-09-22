@@ -121,36 +121,27 @@ exports.dayBills = (req, res) => {
                     // save document
                     console.log('\n 1 === ');
                     doc.pipe(fs.createWriteStream("document.pdf"));
-                    ;(async function createTable(){
-                        console.log('\n 2 === ');
-                        // table
-                        const table = { 
-                            title: '',
-                            headers: [
-                                { label: "Customer Name", property: 'customer_name', width: 60, renderer: null },
-                                { label: "Today Bill", property: 'total_amount', width: 150, renderer: null }, 
-                                { label: "Balance", property: 'rate', width: 100, renderer: null }, 
-                                { label: "Paid", property: 'price2', width: 100, renderer: null }
-                            ],
-                            datas: bills,
-                            rows: [ /* or simple data */ ],
-                        };
-                        console.log('\n 3 table: === ', JSON.stringify(table));
-                    
-                        // the magic (async/await)
-                        await doc.table(table, { /* options */ });
-                        // -- or --
-                        // doc.table(table).then(() => { doc.end() }).catch((err) => { })
-                    
-                        // if your run express.js server
-                        // to show PDF on navigator
-                        // doc.pipe(res);
-                    
-                        // done!
-                        console.log('\n 4 === ');
-                        await doc.end();
-                        console.log('\n 5 === ');
-                    })();
+                    console.log('\n 2 === ');
+                    // table
+                    const table = { 
+                        title: '',
+                        headers: [
+                            { label: "Customer Name", property: 'customer_name', width: 60, renderer: null },
+                            { label: "Today Bill", property: 'total_amount', width: 150, renderer: null }, 
+                            { label: "Balance", property: 'rate', width: 100, renderer: null } 
+                            // { label: "Paid", property: 'price2', width: 100, renderer: null }
+                        ],
+                        datas: bills
+                    };
+                    console.log('\n 3 table: === ', JSON.stringify(table));
+                    await doc.table(table, {
+                        prepareHeader: () => doc.font("Helvetica-Bold").fontSize(8),
+                        prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
+                            doc.font("Helvetica").fontSize(8);
+                            indexColumn === 0 && doc.addBackground(rectRow, 'blue', 0.15);
+                        },
+                        });
+                    await doc.end();
                     console.log('\n 6 === ');
                     await res.send(doc);
                 } else {
