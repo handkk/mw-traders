@@ -113,7 +113,7 @@ exports.dayBills = (req, res) => {
     const billdate = req.body.bill_date + 'T00:00:00.000Z';
     userModel.findOne(userreq).then(user => {
         if (user) {
-            billModel.find({ 'bill_date': billdate }).then(async bills => {
+            billModel.find({ 'bill_date': billdate }).then(bills => {
                 if (bills) {
                     console.log('\n bills: res === ', JSON.stringify(bills));
                     // init document
@@ -134,16 +134,11 @@ exports.dayBills = (req, res) => {
                         datas: bills
                     };
                     console.log('\n 3 table: === ', JSON.stringify(table));
-                    await doc.table(table, {
-                        prepareHeader: () => doc.font("Helvetica-Bold").fontSize(8),
-                        prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-                            doc.font("Helvetica").fontSize(8);
-                            indexColumn === 0 && doc.addBackground(rectRow, 'blue', 0.15);
-                        },
-                        });
-                    await doc.end();
+                    doc.table(table);
+                    doc.pipe(res);
                     console.log('\n 6 === ');
-                    await res.send(doc);
+                    doc.end();
+                    // await res.send(doc);
                 } else {
                     res.send([]);
                 }
