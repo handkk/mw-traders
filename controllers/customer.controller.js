@@ -2,6 +2,8 @@
 var customerModel = require('../models/customer.model');
 var userModel = require('../models/user.model');
 var billModel = require('../models/bill.model');
+const fs = require("fs");
+const PDFDocument = require("pdfkit-table");
 
 // Get Customers
 exports.getCustomers = (req, res) => {
@@ -109,12 +111,41 @@ exports.dayBills = (req, res) => {
     }
     
     const billdate = req.body.bill_date + 'T00:00:00.000Z';
-    // const billdate = '2023-09-20' + 'T00:00:00.000Z';
     userModel.findOne(userreq).then(user => {
         if (user) {
             billModel.find({ 'bill_date': billdate }).then(bills => {
                 if (bills) {
-                    res.send(bills);
+                    // init document
+                    let doc = new PDFDocument({ margin: 30, size: 'A4' });
+                    // save document
+                    doc.pipe(fs.createWriteStream("./document.pdf"));
+                    ;(async function createTable(){
+                        // table
+                        const table = { 
+                          title: '',
+                          headers: [
+                            { label: "Customer Name", property: 'customer_name', width: 60, renderer: null },
+                            { label: "Today Bill", property: 'total_amount', width: 150, renderer: null }, 
+                            { label: "Balance", property: 'rate', width: 100, renderer: null }, 
+                            { label: "Paid", property: 'price2', width: 100, renderer: null }
+                          ],
+                          datas: bills,
+                          rows: [ /* or simple data */ ],
+                        };
+                    
+                        // the magic (async/await)
+                        await doc.table(table, { /* options */ });
+                        // -- or --
+                        // doc.table(table).then(() => { doc.end() }).catch((err) => { })
+                    
+                        // if your run express.js server
+                        // to show PDF on navigator
+                        // doc.pipe(res);
+                    
+                        // done!
+                        await doc.end();
+                        await res.send(doc);
+                    })();
                 } else {
                     res.send([]);
                 }

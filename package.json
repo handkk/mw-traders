@@ -24,6 +24,7 @@
     "mongoose": "^7.2.4",
     "morgan": "^1.10.0",
     "nodemon": "^2.0.22",
+    "pdfkit-table": "^0.1.99",
     "uuid": "^9.0.0"
   }
 }
