@@ -112,65 +112,42 @@ exports.dayBills = (req, res) => {
     const billdate = req.body.bill_date + 'T00:00:00.000Z';
     userModel.findOne(userreq).then(user => {
         if (user) {
-            customerModel.find({}).then(customers => {
-                if (customers) {
-                    let customersList = customers;
-                    console.log('\n customersList: res === ', JSON.stringify(customersList));
-                    billModel.find({ 'bill_date': billdate }).then(async bills => {
-                        if (bills) {
-                            console.log('\n bills: res === ', JSON.stringify(bills));
-                            let todayCustomers = [];
-                            await bills.forEach(bill => {
-                                console.log('\n Each bill: === ', JSON.stringify(bill));
-                                const customer = customersList.find(c => c._id === bill.customer_id);
-                                console.log('\n match customer === ', JSON.stringify(customer));
-                                if (customer) {
-                                    let billData = bill;
-                                    billData['balance'] = customer.balance_amount;
-                                    todayCustomers.push(billData);
-                                }
-                            });
-                            console.log('\n todayCustomers === ', JSON.stringify(todayCustomers));
-                            await res.send(todayCustomers);
-                            // init document
-                            // let doc = new PDFDocument({ margin: 30, size: 'A4' });
-                            // save document
-                            // console.log('\n 1 === ');
-                            // doc.pipe(fs.createWriteStream("document.pdf"));
-                            // console.log('\n 2 === ');
-                            // table
-                            // const table = { 
-                            //     title: '',
-                            //     headers: [
-                            //         { label: "Customer Name", property: 'customer_name', width: 60, renderer: null },
-                            //         { label: "Today Bill", property: 'total_amount', width: 150, renderer: null }, 
-                            //         { label: "Balance", property: 'rate', width: 100, renderer: null } 
-                            //         // { label: "Paid", property: 'price2', width: 100, renderer: null }
-                            //     ],
-                            //     datas: bills
-                            // };
-                            // console.log('\n 3 table: === ', JSON.stringify(table));
-                            // doc.table(table);
-                            // res.setHeader('Content-Type', 'application/pdf');
-                            // res.setHeader('Content-Disposition', 'attachment; filename=document.pdf');
-                            // doc.pipe(res);
-                            // console.log('\n 6 === ');
-                            // doc.end();
-                            // await res.send(doc);
-                        } else {
-                            res.send([]);
-                        }
-                    })
-                    .catch(err => {
-                        res.status(500).send({
-                            message: err.message || 'Bills not found'
-                        });
-                    });
+            billModel.find({ 'bill_date': billdate }).then(bills => {
+                if (bills) {
+                    console.log('\n bills: res === ', JSON.stringify(bills));
+                    res.send(bills);
+                    // init document
+                    // let doc = new PDFDocument({ margin: 30, size: 'A4' });
+                    // save document
+                    // console.log('\n 1 === ');
+                    // doc.pipe(fs.createWriteStream("document.pdf"));
+                    // console.log('\n 2 === ');
+                    // table
+                    // const table = { 
+                    //     title: '',
+                    //     headers: [
+                    //         { label: "Customer Name", property: 'customer_name', width: 60, renderer: null },
+                    //         { label: "Today Bill", property: 'total_amount', width: 150, renderer: null }, 
+                    //         { label: "Balance", property: 'rate', width: 100, renderer: null } 
+                    //         // { label: "Paid", property: 'price2', width: 100, renderer: null }
+                    //     ],
+                    //     datas: bills
+                    // };
+                    // console.log('\n 3 table: === ', JSON.stringify(table));
+                    // doc.table(table);
+                    // res.setHeader('Content-Type', 'application/pdf');
+                    // res.setHeader('Content-Disposition', 'attachment; filename=document.pdf');
+                    // doc.pipe(res);
+                    // console.log('\n 6 === ');
+                    // doc.end();
+                    // await res.send(doc);
+                } else {
+                    res.send([]);
                 }
             })
             .catch(err => {
                 res.status(500).send({
-                    message: err.message || 'Customers not found'
+                    message: err.message || 'Bills not found'
                 });
             });
         } else {

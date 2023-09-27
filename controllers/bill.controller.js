@@ -16,12 +16,12 @@ exports.getBills = (req, res) => {
         if (user) {
             const limit = req.body.limit ? req.body.limit : 1000;
             const skip = req.body.skip ? (req.body.skip - 1) : 0;
-            let query = {};
+            let dateQuery = {};
             if (req.body.bill_date) {
-                query['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
+                dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
             }
             billModel.count().then(count => {
-                var query = billModel.find(query).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
+                var query = billModel.find(dateQuery).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
                 query.exec().then(billsData => {
                     const result = {
                         'data': billsData,
