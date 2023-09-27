@@ -113,14 +113,16 @@ exports.dayBills = (req, res) => {
     userModel.findOne(userreq).then(user => {
         if (user) {
             customerModel.find({}).then(customers => {
-                console.log('\n customers: res === ', JSON.stringify(customers));
                 if (customers) {
-                    billModel.find({ 'bill_date': billdate }).then(bills => {
+                    let customersList = customers;
+                    console.log('\n customersList: res === ', JSON.stringify(customersList));
+                    billModel.find({ 'bill_date': billdate }).then(async bills => {
                         if (bills) {
                             console.log('\n bills: res === ', JSON.stringify(bills));
                             let todayCustomers = [];
-                            bills.forEach(bill => {
-                                const customer = customers.find(c => c._id === bill.customer_id);
+                            await bills.forEach(bill => {
+                                console.log('\n Each bill: === ', JSON.stringify(bill));
+                                const customer = customersList.find(c => c._id === bill.customer_id);
                                 console.log('\n match customer === ', JSON.stringify(customer));
                                 if (customer) {
                                     let billData = bill;
@@ -129,11 +131,7 @@ exports.dayBills = (req, res) => {
                                 }
                             });
                             console.log('\n todayCustomers === ', JSON.stringify(todayCustomers));
-                            if (todayCustomers) {
-                                res.send(todayCustomers);
-                            } else {
-                                res.send([]);
-                            }
+                            await res.send(todayCustomers);
                             // init document
                             // let doc = new PDFDocument({ margin: 30, size: 'A4' });
                             // save document

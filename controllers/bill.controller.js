@@ -95,7 +95,9 @@ exports.createBill = (req, res) => {
                                     }
                                     req.body['created_at'] = new Date();
                                     req.body['modified_at'] = new Date();
-                                    req.body['bill_date'] = req.body['bill_date'] + 'T00:00:00.000Z';
+                                    const date = req.body['bill_date'];
+                                    console.log('date: ', date);
+                                    req.body['bill_date'] = moment(date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
                                     console.log('\n new bill req.body: === ', JSON.stringify(req.body), '\n');
                                     const bill = new billModel(req.body);
                                     bill.save(bill)
