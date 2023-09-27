@@ -261,7 +261,7 @@ exports.resetpassword = (req, res) => {
                 message: `User not found`
             });
         } else {
-            const password = { 'password': new_password, 'modified_at': new Date() };
+            const password = { 'password': new_password, 'modified_at': new Date(), 'sessionId': '' };
             userModel.findOneAndUpdate({'username': data.username}, password).then(sessionout => {
                 userModel.findOne({'username': data.username}).then(userinfo => {
                     res.status(200).send({ message: 'Password Reset Successfully' })
