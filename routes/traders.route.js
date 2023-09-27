@@ -16,6 +16,7 @@ router.delete('/remove_user/:id', userController.deleteUser);
 router.get('/user_info/:id', userController.getUserInfo);
 router.post('/login', userController.login);
 router.post('/logout', userController.logout);
+router.post('/reset_password', userController.resetpassword);
 
 // Farmer apis
 router.post('/farmers', farmerController.getFarmers);

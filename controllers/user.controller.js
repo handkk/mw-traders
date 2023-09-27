@@ -234,3 +234,52 @@ exports.logout = (req, res) => {
         });
     })
 }
+
+// Forgot password
+exports.resetpassword = (req, res) => {
+    if (!req.body.username) {
+        return res.status(400).send({message: 'username is required'});
+    }
+    if (!req.body.new_password) {
+        return res.status(400).send({message: 'New Password is required'});
+    }
+    if (!req.body.confirm_password) {
+        return res.status(400).send({message: 'Confirm Password is required'});
+    }
+    const username = req.body.username;
+    const new_password = req.body.new_password;
+    const confirm_password = req.body.confirm_password;
+
+    if (new_password !== confirm_password) {
+        return res.status(500).send({ message: 'New password & confirm password is not matched' })
+    }
+
+    userModel.findOne({'username': username})
+    .then(data => {
+        if (!data) {
+            res.status(404).send({
+                message: `User not found`
+            });
+        } else {
+            const password = { 'password': new_password, 'modified_at': new Date() };
+            userModel.findOneAndUpdate({'username': data.username}, password).then(sessionout => {
+                userModel.findOne({'username': data.username}).then(userinfo => {
+                    res.status(200).send({ message: 'Password Reset Successfully' })
+                }).catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'user not found'
+                    });
+                })
+            }).catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Invalid credentials'
+                });
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'not able to get user info'
+        });
+    })
+}
