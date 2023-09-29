@@ -97,36 +97,19 @@ exports.createBill = (req, res) => {
                                     } else if (req.body.unit_wise) {
                                         req.body['total_amount'] = req.body.rate * req.body.quantity;
                                     }
-                                    const customer_balance_amount = req.body['customer_balance_amount'];
-                                    req.body['customer_balance_amount'] = customer_balance_amount + req.body['total_amount'];
+                                    let customer_balance_amount = customerData['balance_amount'] + req.body['total_amount'];
+                                    req.body['customer_balance_amount'] = customer_balance_amount;
                                     req.body['created_at'] = new Date();
                                     req.body['modified_at'] = new Date();
                                     const date = req.body['bill_date'];
-                                    console.log('date: ', date);
                                     req.body['bill_date'] = moment(date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
-                                    console.log('\n new bill req.body: === ', JSON.stringify(req.body), '\n');
                                     const bill = new billModel(req.body);
                                     bill.save(bill)
                                     .then(newbilldata => {
-                                        customerModel.findOne({'_id': billdata.customer_id}).then(customer_data => {
+                                        const balance_amount = { 'balance_amount': customer_balance_amount, 'last_amount_updated': req.body.total_amount };
+                                        customerModel.findOneAndUpdate({'_id': billdata.customer_id}, balance_amount, { returnDocument: "after" }).then(customer_data => {
                                             if (customer_data) {
-                                                console.log('\n customer data === ', JSON.stringify(customer_data), '\n');
-                                                const amount = customer_data.balance_amount + req.body.total_amount;
-                                                const balance_amount = { 'balance_amount': amount, 'last_amount_updated': req.body.total_amount };
-                                                customerModel.updateOne({'_id': billdata.customer_id}, balance_amount).then(updateddata => {
-                                                    if (updateddata) {
-                                                        res.send(newbilldata);
-                                                    } else {
-                                                        res.status(403).send({
-                                                            message: 'Customer not found'
-                                                        });
-                                                    }
-                                                })
-                                                .catch(err => {
-                                                    res.status(500).send({
-                                                        message: err.message || 'Save operation is not occured'
-                                                    });
-                                                })
+                                                res.send(newbilldata);
                                             } else {
                                                 res.status(403).send({
                                                     message: 'Customer not found'

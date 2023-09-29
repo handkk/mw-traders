@@ -118,35 +118,27 @@ exports.dayBills = (req, res) => {
                     let customers = [];
                     let tmpcustomerids = [];
                     let allBillsData = bills;
-                    console.log('\n === bills: res ', JSON.stringify(allBillsData));
                     allBillsData.forEach(bill => {
                         tmpcustomers.push({
                             'customer_name': bill.customer_name,
                             'customer_id': bill.customer_id
                         });
                     })
-                    console.log('\n === tmpcustomers: res === ', JSON.stringify(tmpcustomers));
                     customers = tmpcustomers.filter((obj, index) => {
                         return index === tmpcustomers.findIndex(o => obj.customer_id === o.customer_id);
                     });
                     customers.forEach(c1 => {
                         tmpcustomerids.push(c1.customer_id);
                     });
-                    console.log('\n === customers: after removed duplicates === ', JSON.stringify(customers));
                     customerModel.find({'_id': tmpcustomerids}).then(customer => {
                         let allcustomer = customer;
-                        console.log('\n === after duplicate remove finding the allcustomer === ', JSON.stringify(allcustomer[0]['_id']));
                         allBillsData.forEach((b, i) => {
-                            console.log('\n === matching the customer in b/w bill and customer data b === ', JSON.stringify(b['customer_id']));
                             let indexCustomer = -1;
                             indexCustomer = allcustomer.findIndex(ac => ac['_id'].toString() === b['customer_id']);
-                            console.log('\n indexCustomer: === ', indexCustomer, '\n allcustomer[index] === ', JSON.stringify(allcustomer[indexCustomer]));
                             if (indexCustomer !== -1) {
-                                console.log('\n index found ', indexCustomer);
                                 b["customer_balance_amount"] = allcustomer[indexCustomer]["balance_amount"];
                             }
                         })
-                        console.log('\n === after adding balance amount to bills === ', JSON.stringify(allBillsData));
                         res.send(allBillsData);
                     })
                     .catch(err => {
