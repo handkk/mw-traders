@@ -205,6 +205,16 @@ exports.deleteBill = (req, res) => {
                         message: `Cannot delete user with id ${id}`
                     });
                 } else {
+                    // customerModel.findOneAndUpdate({'_id': data.customer_id}, data., { returnDocument: "after" })
+                    // .then(customerUpdated => {
+
+                    // })
+                    // .catch(err => {
+                    //     res.status(500).send({
+                    //         message: err.message || 'delete operation is not occured'
+                    //     });
+                    // })
+                    console.log('\n deleted bill info === ', JSON.stringify(data), '\n');
                     res.send({ success: true, message: "Bill Deleted Successfully" });
                 }
             })

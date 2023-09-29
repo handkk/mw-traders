@@ -114,7 +114,20 @@ exports.dayBills = (req, res) => {
         if (user) {
             billModel.find({ 'bill_date': billdate }).then(bills => {
                 if (bills) {
+                    let tmpcustomers = [];
+                    let customers = [];
                     console.log('\n bills: res === ', JSON.stringify(bills));
+                    bills.forEach(bill => {
+                        tmpcustomers.push({
+                            'customer_name': bill.customer_name,
+                            'customer_id': bill.customer_id
+                        })
+                    })
+                    console.log('\n tmpcustomers: res === ', JSON.stringify(tmpcustomers));
+                    customers = tmpcustomers.filter((obj, index) => {
+                        return index === tmpcustomers.findIndex(o => obj.customer_id === o.customer_id);
+                    });
+                    console.log('\n customers: after removed duplicates === ', JSON.stringify(customers));
                     res.send(bills);
                     // init document
                     // let doc = new PDFDocument({ margin: 30, size: 'A4' });
