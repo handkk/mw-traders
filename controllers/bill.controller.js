@@ -55,7 +55,6 @@ exports.getBills = (req, res) => {
 
 // Create New Bill
 exports.createBill = (req, res) => {
-    console.log('create user enters body ', JSON.stringify(req.body), '\n');
     if (!req.body) {
         res.status(400).send({message: 'payload is required'});
         return;
@@ -71,7 +70,6 @@ exports.createBill = (req, res) => {
                  '_id': req.body.vegetable_id, 'name': req.body.vegetable_name
             }).then(vegetableData => {
                 if (vegetableData) {
-                    console.log('\n vegetableData ', JSON.stringify(vegetableData), '\n');
                     farmerModel.findOne({
                         'name': req.body.farmer_name, '_id': req.body.farmer_id
                     })
@@ -90,7 +88,6 @@ exports.createBill = (req, res) => {
                                         'vegetable_id': req.body.vegetable_id,
                                         'vegetable_name': req.body.vegetable_name
                                     };
-                                    // console.log('\n bill create req body ', JSON.stringify(req.body), '\n');
                                     
                                     if (!req.body.unit_wise) {
                                         req.body['total_amount'] = (req.body.rate / 10) * req.body.quantity;
@@ -188,17 +185,18 @@ exports.deleteBill = (req, res) => {
                         message: `Cannot delete user with id ${id}`
                     });
                 } else {
-                    // customerModel.findOneAndUpdate({'_id': data.customer_id}, data., { returnDocument: "after" })
-                    // .then(customerUpdated => {
-
-                    // })
-                    // .catch(err => {
-                    //     res.status(500).send({
-                    //         message: err.message || 'delete operation is not occured'
-                    //     });
-                    // })
-                    console.log('\n deleted bill info === ', JSON.stringify(data), '\n');
-                    res.send({ success: true, message: "Bill Deleted Successfully" });
+                    const deductableAmount = data.customer_balance_amount - data.total_amount;
+                    const balanceAmount = { 'balance_amount': deductableAmount, 'last_amount_updated': deductableAmount };
+                    customerModel.findOneAndUpdate({'_id': data.customer_id}, balanceAmount, { returnDocument: "after" })
+                    .then(customerUpdated => {
+                        console.log('\n after deleted bill customer info === ', JSON.stringify(customerUpdated), '\n');
+                        res.send({ success: true, message: "Bill Deleted Successfully" });
+                    })
+                    .catch(err => {
+                        res.status(500).send({
+                            message: err.message || 'delete operation is not occured'
+                        });
+                    })
                 }
             })
             .catch(err => {
@@ -276,8 +274,6 @@ exports.updateBill = (req, res) => {
                                                     // let last_amount_updated = 400;
                                                     // let total_amount = 40;
                                                     // let new_amount = 0;
-                                                    console.log('\n customer_data: ', JSON.stringify(customer_data), '\n');
-                                                    console.log('\n billReqBody: ', JSON.stringify(billReqBody), '\n');
                                                     let amount;
                                                     if (customer_data.last_amount_updated > billReqBody.total_amount) {
                                                         const tmp_amount1 = customer_data.last_amount_updated - billReqBody.total_amount;

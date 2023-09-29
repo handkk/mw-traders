@@ -29,7 +29,6 @@ exports.getFarmers = (req, res) => {
 
 // Create New Farmer
 exports.createFarmer = (req, res) => {
-    // console.log('create user enters body ', JSON.stringify(req.body), '\n');
     if (!req.body) {
         res.status(400).send({message: 'payload is required'});
         return;
@@ -51,13 +50,11 @@ exports.createFarmer = (req, res) => {
 
 // Update Farmer Info
 exports.updateFarmer = (req, res) => {
-    // console.log('update user enters body ', JSON.stringify(req.body), '\n');
     if (!req.body) {
         return res.status(400).send({message: 'Data to update can not be empty'});
     }
     const id = req.params.id;
     req.body['modified_at'] = new Date();
-    // console.log('update user id ', userid, '\n');
 
     farmerModel.findOneAndUpdate({'_id': id}, req.body, { returnDocument: "after" })
     .then(updatedFarmerData => {
@@ -82,7 +79,6 @@ exports.deleteFarmer = (req, res) => {
         return res.status(400).send({message: 'Farmer id param is required'});
     }
     const id = req.params.id;
-    // console.log('update user id ', userid, '\n');
 
     farmerModel.findOneAndRemove({'_id': id})
     .then(data => {

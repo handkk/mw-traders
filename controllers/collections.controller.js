@@ -46,7 +46,6 @@ exports.getCollections = (req, res) => {
 
 // Create New Collection
 exports.createCollection = (req, res) => {
-    console.log('create user enters body ', JSON.stringify(req.body), '\n');
     if (!req.body) {
         return res.status(400).send({message: 'payload is required'});
     } else if (req.body && !req.body.userId) {
@@ -71,7 +70,6 @@ exports.createCollection = (req, res) => {
             .then(newbilldata => {
                 customerModel.findOne({'_id': collectiondata.customer_id}).then(customer_data => {
                     if (customer_data) {
-                        console.log('\n customer data === ', JSON.stringify(customer_data), '\n');
                         const amount = customer_data.balance_amount > 0 ? customer_data.balance_amount - req.body.amount : 0;
                         const collected_amount = customer_data.collected_amount + req.body.amount;
                         const update_amount = { 

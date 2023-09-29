@@ -114,38 +114,39 @@ exports.dayBills = (req, res) => {
         if (user) {
             billModel.find({ 'bill_date': billdate }).then(bills => {
                 if (bills) {
-                    let tmpcustomers = [];
-                    let customers = [];
-                    let tmpcustomerids = [];
-                    let allBillsData = bills;
-                    allBillsData.forEach(bill => {
-                        tmpcustomers.push({
-                            'customer_name': bill.customer_name,
-                            'customer_id': bill.customer_id
-                        });
-                    })
-                    customers = tmpcustomers.filter((obj, index) => {
-                        return index === tmpcustomers.findIndex(o => obj.customer_id === o.customer_id);
-                    });
-                    customers.forEach(c1 => {
-                        tmpcustomerids.push(c1.customer_id);
-                    });
-                    customerModel.find({'_id': tmpcustomerids}).then(customer => {
-                        let allcustomer = customer;
-                        allBillsData.forEach((b, i) => {
-                            let indexCustomer = -1;
-                            indexCustomer = allcustomer.findIndex(ac => ac['_id'].toString() === b['customer_id']);
-                            if (indexCustomer !== -1) {
-                                b["customer_balance_amount"] = allcustomer[indexCustomer]["balance_amount"];
-                            }
-                        })
-                        res.send(allBillsData);
-                    })
-                    .catch(err => {
-                        res.status(500).send({
-                            message: err.message || 'Customers not found'
-                        });
-                    });
+                    res.send(bills);
+                    // let tmpcustomers = [];
+                    // let customers = [];
+                    // let tmpcustomerids = [];
+                    // let allBillsData = bills;
+                    // allBillsData.forEach(bill => {
+                    //     tmpcustomers.push({
+                    //         'customer_name': bill.customer_name,
+                    //         'customer_id': bill.customer_id
+                    //     });
+                    // })
+                    // customers = tmpcustomers.filter((obj, index) => {
+                    //     return index === tmpcustomers.findIndex(o => obj.customer_id === o.customer_id);
+                    // });
+                    // customers.forEach(c1 => {
+                    //     tmpcustomerids.push(c1.customer_id);
+                    // });
+                    // customerModel.find({'_id': tmpcustomerids}).then(customer => {
+                    //     let allcustomer = customer;
+                    //     allBillsData.forEach((b, i) => {
+                    //         let indexCustomer = -1;
+                    //         indexCustomer = allcustomer.findIndex(ac => ac['_id'].toString() === b['customer_id']);
+                    //         if (indexCustomer !== -1) {
+                    //             b["customer_balance_amount"] = allcustomer[indexCustomer]["balance_amount"];
+                    //         }
+                    //     })
+                    //     res.send(allBillsData);
+                    // })
+                    // .catch(err => {
+                    //     res.status(500).send({
+                    //         message: err.message || 'Customers not found'
+                    //     });
+                    // });
                     // init document
                     // let doc = new PDFDocument({ margin: 30, size: 'A4' });
                     // save document
@@ -204,17 +205,14 @@ exports.customerBalanceStatement = (req, res) => {
     
     userModel.findOne(userreq).then(user => {
         if (user) {
-            console.log('\n user found === ', JSON.stringify(user), '\n');
             customerModel.find({}).then(customers => {
                 const cust = customers;
-                console.log('\n customers found === ', JSON.stringify(cust), '\n');
                 if (cust) {
                     var table_data = "<table><thead><tr><th>Name</th><th>Balance Amount</th><th>Paid Amount</th></tr></thead><tbody>";
                     cust.forEach(c => {
                         table_data += "<tr><td>" + c.name+ "</td><td>" + c.balance_amount + "</td><td>" + c.collected_amount + "</td></tr>";
                     });
                     table_data += "</tbody></table>";
-                    console.log('\n table_data is === ', table_data, '\n');
                     res.send({table: table_data});
                 }
             })
