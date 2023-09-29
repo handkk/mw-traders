@@ -137,9 +137,11 @@ exports.dayBills = (req, res) => {
                         console.log('\n === after duplicate remove finding the customers === ', JSON.stringify(customer));
                         let allcustomer = customer;
                         allBillsData.forEach((b, i) => {
+                            console.log('\n === matching the customer in b/w bill and customer data b === ', JSON.stringify(b));
                             const index = allcustomer.findIndex(ac => ac._id === b.customer_id);
+                            console.log('\n index: === ', index, '\n allcustomer[index] === ', JSON.stringify(allcustomer[index]));
                             if (index !== 0) {
-                                b["customer_balance_amount"] = allcustomer[index]['balance_amount'];
+                                b["customer_balance_amount"] = allcustomer[index]["balance_amount"];
                             }
                         })
                         console.log('\n === after adding balance amount to bills === ', JSON.stringify(allBillsData));
