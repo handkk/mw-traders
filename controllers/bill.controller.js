@@ -186,10 +186,9 @@ exports.deleteBill = (req, res) => {
                     });
                 } else {
                     const deductableAmount = data.customer_balance_amount - data.total_amount;
-                    const balanceAmount = { 'balance_amount': deductableAmount, 'last_amount_updated': deductableAmount };
+                    const balanceAmount = { 'balance_amount': deductableAmount, 'last_amount_updated': data.total_amount };
                     customerModel.findOneAndUpdate({'_id': data.customer_id}, balanceAmount, { returnDocument: "after" })
                     .then(customerUpdated => {
-                        console.log('\n after deleted bill customer info === ', JSON.stringify(customerUpdated), '\n');
                         res.send({ success: true, message: "Bill Deleted Successfully" });
                     })
                     .catch(err => {
