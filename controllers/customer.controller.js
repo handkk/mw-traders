@@ -116,19 +116,40 @@ exports.dayBills = (req, res) => {
                 if (bills) {
                     let tmpcustomers = [];
                     let customers = [];
-                    console.log('\n bills: res === ', JSON.stringify(bills));
-                    bills.forEach(bill => {
+                    let tmpcustomerids = [];
+                    let allBillsData = bills;
+                    console.log('\n === bills: res ', JSON.stringify(allBillsData));
+                    allBillsData.forEach(bill => {
                         tmpcustomers.push({
                             'customer_name': bill.customer_name,
                             'customer_id': bill.customer_id
-                        })
+                        });
                     })
-                    console.log('\n tmpcustomers: res === ', JSON.stringify(tmpcustomers));
+                    console.log('\n === tmpcustomers: res === ', JSON.stringify(tmpcustomers));
                     customers = tmpcustomers.filter((obj, index) => {
                         return index === tmpcustomers.findIndex(o => obj.customer_id === o.customer_id);
                     });
-                    console.log('\n customers: after removed duplicates === ', JSON.stringify(customers));
-                    res.send(bills);
+                    customers.forEach(c1 => {
+                        tmpcustomerids.push(c1.customer_id);
+                    });
+                    console.log('\n === customers: after removed duplicates === ', JSON.stringify(customers));
+                    customerModel.find({'_id': tmpcustomerids}).then(customer => {
+                        console.log('\n === after duplicate remove finding the customers === ', JSON.stringify(customer));
+                        let allcustomer = customer;
+                        allBillsData.forEach((b, i) => {
+                            const index = allcustomer.findIndex(ac => ac._id === b.customer_id);
+                            if (index !== 0) {
+                                b["customer_balance_amount"] = allcustomer[index]['balance_amount'];
+                            }
+                        })
+                        console.log('\n === after adding balance amount to bills === ', JSON.stringify(allBillsData));
+                        res.send(allBillsData);
+                    })
+                    .catch(err => {
+                        res.status(500).send({
+                            message: err.message || 'Customers not found'
+                        });
+                    });
                     // init document
                     // let doc = new PDFDocument({ margin: 30, size: 'A4' });
                     // save document
