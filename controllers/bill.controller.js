@@ -103,7 +103,7 @@ exports.createBill = (req, res) => {
                                     const bill = new billModel(req.body);
                                     bill.save(bill)
                                     .then(newbilldata => {
-                                        const balance_amount = { 'balance_amount': customer_balance_amount, 'last_amount_updated': req.body.total_amount };
+                                        const balance_amount = { 'balance_amount': customer_balance_amount, 'last_amount_updated': req.body.total_amount, $push: { 'bills': req.body } };
                                         customerModel.findOneAndUpdate({'_id': billdata.customer_id}, balance_amount, { returnDocument: "after" }).then(customer_data => {
                                             if (customer_data) {
                                                 res.send(newbilldata);
