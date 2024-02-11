@@ -262,25 +262,13 @@ exports.customerBills = (req, res) => {
                 }
                 customerModel.find({}).then(customers => {
                     let all_customers = customers;
-                    console.log('\n all_customers: ', JSON.stringify(all_customers));
-                    let customer_ids = [];
-                    all_customers.forEach(c => {
-                        customer_ids.push(c._id);
+                    all_customers.forEach(async (c) => {
+                        let bills = await getBillsByCustomer(req.body.bill_date, [c._id]);
+                        console.log('\n bills after getting await: ', JSON.stringify(bills));
+                        c.bills = bills;
                     })
-                    console.log('\n customer_ids: ', JSON.stringify(customer_ids));
-                    billModel.find({
-                        'bill_date': req.body.bill_date + 'T00:00:00.000Z',
-                        'customer_id': { $in: customer_ids }
-                    }).then(bills => {
-                        let all_bills = bills;
-                        console.log('\n all_bills: ', JSON.stringify(all_bills));
-                        res.send(all_bills);
-                    })
-                    .catch(err => {
-                        res.status(500).send({
-                            message: err.message || 'Not able to fetch the bills'
-                        })
-                    });
+                    console.log('\n final all_customers: ', JSON.stringify(all_customers));
+                    res.send(all_customers);
                 })
                 .catch(err => {
                     res.status(500).send({
@@ -301,4 +289,21 @@ exports.customerBills = (req, res) => {
     } catch (e) {
         console.log('customer Bills catch block ', e);
     }
+}
+
+
+function getBillsByCustomer(bill_date, customer_ids) {
+    billModel.find({
+        'bill_date': bill_date + 'T00:00:00.000Z',
+        'customer_id': { $in: customer_ids }
+    }).then(bills => {
+        let all_bills = bills;
+        console.log('\n all_bills: ', JSON.stringify(all_bills));
+        res.send(all_bills);
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'Not able to fetch the bills'
+        })
+    });
 }
