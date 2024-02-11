@@ -263,9 +263,22 @@ exports.customerBills = (req, res) => {
                 customerModel.find({}).then(async (customers) => {
                     let all_customers = customers;
                     await all_customers.forEach(async (c) => {
-                        let bills = await getBillsByCustomer(req.body.bill_date, [c._id]);
-                        console.log('\n bills after getting await: ', JSON.stringify(bills));
-                        c.bills = bills;
+                        // let bills = await getBillsByCustomer(req.body.bill_date, [c._id]);
+                        // console.log('\n bills after getting await: ', JSON.stringify(bills));
+                        // c.bills = bills;
+                        billModel.find({
+                            'bill_date': bill_date + 'T00:00:00.000Z',
+                            'customer_id': { $in: customer_ids }
+                        }).then(bills => {
+                            let all_bills = bills;
+                            console.log('\n all_bills: ', JSON.stringify(all_bills));
+                            c.bills = all_bills;
+                        })
+                        .catch(err => {
+                            res.status(500).send({
+                                message: 'User session ended, Please login again'
+                            })
+                        });
                     })
                     console.log('\n final all_customers: ', JSON.stringify(all_customers));
                     res.send(all_customers);
