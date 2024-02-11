@@ -74,7 +74,8 @@ exports.createCollection = (req, res) => {
                         const collected_amount = customer_data.collected_amount + req.body.amount;
                         const update_amount = { 
                             'balance_amount': amount,
-                            'collected_amount': collected_amount
+                            'collected_amount': collected_amount,
+                            'last_amount_updated': req.body.amount
                         };
                         customerModel.updateOne({'_id': collectiondata.customer_id}, update_amount).then(updateddata => {
                             if (updateddata) {

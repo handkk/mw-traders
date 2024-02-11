@@ -151,7 +151,7 @@ exports.createBill = (req, res) => {
                                     const bill = new billModel(req.body);
                                     bill.save(bill)
                                     .then(newbilldata => {
-                                        const balance_amount = { 'balance_amount': customer_balance_amount, 'last_amount_updated': req.body.total_amount, $push: { 'bills': req.body } };
+                                        const balance_amount = { 'balance_amount': customer_balance_amount, $push: { 'bills': req.body } };
                                         customerModel.findOneAndUpdate({'_id': billdata.customer_id}, balance_amount, { returnDocument: "after" }).then(customer_data => {
                                             if (customer_data) {
                                                 res.send(newbilldata);
@@ -234,7 +234,7 @@ exports.deleteBill = (req, res) => {
                     });
                 } else {
                     const deductableAmount = data.customer_balance_amount - data.total_amount;
-                    const balanceAmount = { 'balance_amount': deductableAmount, 'last_amount_updated': data.total_amount };
+                    const balanceAmount = { 'balance_amount': deductableAmount };
                     customerModel.findOneAndUpdate({'_id': data.customer_id}, balanceAmount, { returnDocument: "after" })
                     .then(customerUpdated => {
                         res.send({ success: true, message: "Bill Deleted Successfully" });
@@ -334,7 +334,7 @@ exports.updateBill = (req, res) => {
                                                         amount = customer_data.balance_amount;
                                                     }
                                                     // const amount = customer_data.balance_amount + (req.body.total_amount - customer_data.last_amount_updated);
-                                                    const balance_amount = { 'balance_amount': amount, 'last_amount_updated': billReqBody.total_amount };
+                                                    const balance_amount = { 'balance_amount': amount };
                                                     customerModel.updateOne({'_id': billdata.customer_id}, balance_amount).then(updateddata => {
                                                         if (updateddata) {
                                                             res.send(updatedBillData);
