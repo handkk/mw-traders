@@ -260,9 +260,9 @@ exports.customerBills = (req, res) => {
                 if (req.body.bill_date) {
                     dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
                 }
-                customerModel.find({}).then(customers => {
+                customerModel.find({}).then(async (customers) => {
                     let all_customers = customers;
-                    all_customers.forEach(async (c) => {
+                    await all_customers.forEach(async (c) => {
                         let bills = await getBillsByCustomer(req.body.bill_date, [c._id]);
                         console.log('\n bills after getting await: ', JSON.stringify(bills));
                         c.bills = bills;
@@ -299,11 +299,9 @@ function getBillsByCustomer(bill_date, customer_ids) {
     }).then(bills => {
         let all_bills = bills;
         console.log('\n all_bills: ', JSON.stringify(all_bills));
-        res.send(all_bills);
+        return all_bills;
     })
     .catch(err => {
-        res.status(500).send({
-            message: err.message || 'Not able to fetch the bills'
-        })
+        return err;
     });
 }
