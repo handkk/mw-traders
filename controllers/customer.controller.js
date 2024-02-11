@@ -292,7 +292,7 @@ exports.customerBills = (req, res) => {
 }
 
 
-function getBillsByCustomer(bill_date, customer_ids) {
+async function getBillsByCustomer(bill_date, customer_ids) {
     billModel.find({
         'bill_date': bill_date + 'T00:00:00.000Z',
         'customer_id': { $in: customer_ids }
