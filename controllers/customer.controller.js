@@ -267,8 +267,8 @@ exports.customerBills = (req, res) => {
                         // console.log('\n bills after getting await: ', JSON.stringify(bills));
                         // c.bills = bills;
                         billModel.find({
-                            'bill_date': bill_date + 'T00:00:00.000Z',
-                            'customer_id': { $in: customer_ids }
+                            'bill_date': req.body.bill_date + 'T00:00:00.000Z',
+                            'customer_id': { $in: [c._id] }
                         }).then(bills => {
                             let all_bills = bills;
                             console.log('\n all_bills: ', JSON.stringify(all_bills));
