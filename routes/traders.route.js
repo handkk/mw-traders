@@ -43,6 +43,8 @@ router.post('/new-bill', billController.createBill);
 router.delete('/bill/:id', billController.deleteBill);
 router.put('/update-bill/:id', billController.updateBill);
 router.post('/day_bills', customerController.dayBills);
+router.post('/print_bills', billController.printBills);
+router.post('/customer_bills', customerController.customerBills);
 
 // Collection apis
 router.post('/new-collection', collectionController.createCollection);

@@ -6,6 +6,54 @@ var farmerModel = require('../models/farmer.model');
 var customerModel = require('../models/customer.model');
 const moment = require('moment');
 
+// Print Bills
+exports.printBills = (req, res) => {
+    const userreq = {
+        'userId': req.body.userId,
+        'sessionId': req.body.sessionId
+    }
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            const limit = req.body.limit ? req.body.limit : 1000;
+            const skip = req.body.skip ? (req.body.skip - 1) : 0;
+            let dateQuery = {};
+            if (req.body.bill_date) {
+                dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
+            }
+            customerModel.find({}).then(customers => {
+                res.send(customers);
+                // var query = billModel.find(dateQuery).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
+                // query.exec().then(billsData => {
+                //     const result = {
+                //         'data': billsData,
+                //         'total': count
+                //     };
+                //     res.send(result);
+                // })
+                // .catch(err => {
+                //     res.status(500).send({
+                //         message: err.message || 'Not able to fetch the bills'
+                //     })
+                // })
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Not able to fetch the bills'
+                })
+            })
+        } else {
+            res.status(500).send({
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'Not able to fetch the bills'
+        })
+    })
+}
+
 // Get Bills
 exports.getBills = (req, res) => {
     const userreq = {

@@ -32,6 +32,17 @@ exports.getCustomers = (req, res) => {
 }
 
 // Create New Customer
+
+/*
+{
+  "name": "Raju",
+  "phone_number": "9999999999",
+  "address": "HYD",
+  "notes": null,
+  "userId": "6497d8551ca77b54add93167",
+  "sessionId": "c1635099-fbee-4926-a8e5-0982f49021fd"
+}
+*/
 exports.createCustomer = (req, res) => {
     if (!req.body) {
         res.status(400).send({message: 'payload is required'});
@@ -232,4 +243,43 @@ exports.customerBalanceStatement = (req, res) => {
             message: err.message || 'User not found'
         });
     });   
+}
+
+// Print Bills
+exports.customerBills = (req, res) => {
+    try {
+        const userreq = {
+            'userId': req.body.userId,
+            'sessionId': req.body.sessionId
+        }
+        userModel.findOne(userreq).then(user => {
+            if (user) {
+                const limit = req.body.limit ? req.body.limit : 1000;
+                const skip = req.body.skip ? (req.body.skip - 1) : 0;
+                let dateQuery = {};
+                if (req.body.bill_date) {
+                    dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
+                }
+                customerModel.find({}).then(customers => {
+                    res.send(customers);
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Not able to fetch the bills'
+                    })
+                })
+            } else {
+                res.status(500).send({
+                    message: 'User session ended, Please login again'
+                })
+            }
+        })
+        .catch(err => {
+            res.status(500).send({
+                message: err.message || 'Not able to fetch the bills'
+            })
+        })
+    } catch (e) {
+        console.log('customer Bills catch block ', e);
+    }
 }
