@@ -261,7 +261,26 @@ exports.customerBills = (req, res) => {
                     dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
                 }
                 customerModel.find({}).then(customers => {
-                    res.send(customers);
+                    let all_customers = customers;
+                    console.log('\n all_customers: ', JSON.stringify(all_customers));
+                    let customer_ids = [];
+                    all_customers.forEach(c => {
+                        customer_ids.push(c._id);
+                    })
+                    console.log('\n customer_ids: ', JSON.stringify(customer_ids));
+                    billModel.find({
+                        'bill_date': req.body.bill_date + 'T00:00:00.000Z',
+                        'customer_id': { $in: customer_ids }
+                    }).then(bills => {
+                        let all_bills = bills;
+                        console.log('\n all_bills: ', JSON.stringify(all_bills));
+                        res.send(all_bills);
+                    })
+                    .catch(err => {
+                        res.status(500).send({
+                            message: err.message || 'Not able to fetch the bills'
+                        })
+                    });
                 })
                 .catch(err => {
                     res.status(500).send({
