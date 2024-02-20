@@ -317,18 +317,22 @@ exports.customerBills = (req, res) => {
 //     });
 // }
 
+// Bill Print Create
 exports.createBillPrint = (req, res) => {
     try {
         console.log('\n');
         console.log('createBillPrint req: ', JSON.stringify(req));
         console.log('\n');
-        bill_printModel.findOne({'bill_date': req.bill_date}).then(data => {
+        const date1 = moment(req['bill_date']).format('YYYY-MM-DD') + 'T00:00:00.000Z';
+        bill_printModel.findOne({'bill_date': date1}).then(data => {
             console.log('\n');
             console.log('createBillPrint res data: ', JSON.stringify(data));
             console.log('\n');
             if (!data) {
                 req['created_at'] = new Date();
                 req['modified_at'] = new Date();
+                const date = req['bill_date'];
+                req['bill_date'] = moment(date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
                 const bill_print = new bill_printModel(req);
                 bill_print.save(bill_print)
                 .then(bill_printdata => {
