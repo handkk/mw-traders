@@ -5,6 +5,7 @@ var billModel = require('../models/bill.model');
 var farmerModel = require('../models/farmer.model');
 var customerModel = require('../models/customer.model');
 const moment = require('moment');
+var customerController = require('../controllers/customer.controller');
 
 // Print Bills
 exports.printBills = (req, res) => {
@@ -155,6 +156,18 @@ exports.createBill = (req, res) => {
                                         customerModel.findOneAndUpdate({'_id': billdata.customer_id}, balance_amount, { returnDocument: "after" }).then(customer_data => {
                                             if (customer_data) {
                                                 res.send(newbilldata);
+                                                const request_body = {
+                                                    'bill_date': date,
+                                                    'name': customer_data.name,
+                                                    'phone_number': customer_data.phone_number,
+                                                    'address': customer_data.address,
+                                                    'notes': customer_data.notes,
+                                                    'last_amount_updated': customer_data.last_amount_updated,
+                                                    'balance_amount': customer_data.balance_amount,
+                                                    'collected_amount': customer_data.collected_amount,
+                                                    'bills': newbilldata
+                                                }
+                                                var bill_Prints = customerController.createBillPrint(request_body, res);
                                             } else {
                                                 res.status(403).send({
                                                     message: 'Customer not found'

@@ -4,6 +4,7 @@ var userModel = require('../models/user.model');
 var billModel = require('../models/bill.model');
 const fs = require("fs");
 const PDFDocument = require("pdfkit-table");
+var bill_printModel = require('../models/bill_print.model');
 
 // Get Customers
 exports.getCustomers = (req, res) => {
@@ -305,16 +306,47 @@ exports.customerBills = (req, res) => {
 }
 
 
-async function getBillsByCustomer(bill_date, customer_ids) {
-    billModel.find({
-        'bill_date': bill_date + 'T00:00:00.000Z',
-        'customer_id': { $in: customer_ids }
-    }).then(bills => {
-        let all_bills = bills;
-        console.log('\n all_bills: ', JSON.stringify(all_bills));
-        return all_bills;
-    })
-    .catch(err => {
-        return err;
-    });
+// async function getBillsByCustomer(bill_date, customer_ids) {
+//     billModel.find({
+//         'bill_date': bill_date + 'T00:00:00.000Z',
+//         'customer_id': { $in: customer_ids }
+//     }).then(bills => {
+//         let all_bills = bills;
+//         console.log('\n all_bills: ', JSON.stringify(all_bills));
+//         return all_bills;
+//     })
+//     .catch(err => {
+//         return err;
+//     });
+// }
+
+exports.createBillPrint = (req, res) => {
+    try {
+        console.log('\n');
+        console.log('createBillPrint req: ', JSON.stringify(req));
+        console.log('\n');
+        bill_printModel.findOne({'bill_date': req.body.bill_date}).then(data => {
+            console.log('\n');
+            console.log('createBillPrint res data: ', JSON.stringify(data));
+            console.log('\n');
+    //         req.body['created_at'] = new Date();
+    // req.body['modified_at'] = new Date();
+    // const customer = new customerModel(req.body);
+    // customer.save(customer)
+    // .then(data => {
+    //     res.send(data);
+    // })
+    // .catch(err => {
+    //     res.status(500).send({
+    //         message: err.message || 'Save operation is not occured'
+    //     });
+    // })
+            res.send(data);
+        })
+        .catch(err => {
+            return err;
+        });
+    } catch (e) {
+        console.log('create Bill Print catch block ', e);
+    }
 }
