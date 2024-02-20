@@ -262,7 +262,7 @@ exports.customerBills = (req, res) => {
                 if (req.body.bill_date) {
                     dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
                 }
-                bill_printModel.find({}).then(async (customers) => {
+                bill_printModel.find(dateQuery).then(async (customers) => {
                     let all_customers = customers;
                     // await all_customers.forEach(async (c) => {
                     //     billModel.find({
