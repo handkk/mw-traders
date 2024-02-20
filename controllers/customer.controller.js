@@ -5,6 +5,7 @@ var billModel = require('../models/bill.model');
 const fs = require("fs");
 const PDFDocument = require("pdfkit-table");
 var bill_printModel = require('../models/bill_print.model');
+const moment = require('moment');
 
 // Get Customers
 exports.getCustomers = (req, res) => {
