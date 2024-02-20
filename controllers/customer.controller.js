@@ -264,6 +264,13 @@ exports.customerBills = (req, res) => {
                 }
                 bill_printModel.find(dateQuery).then(async (customers) => {
                     let all_customers = customers;
+                    all_customers.forEach(c => {
+                        c['balance'] = c['collected_amount'] - c['last_amount_updated'];
+                        c['bill_amount'] = 0;
+                        c.bills.forEach(b => {
+                            c['bill_amount'] = c['bill_amount'] + b['total_amount']
+                        })
+                    });
                     // await all_customers.forEach(async (c) => {
                     //     billModel.find({
                     //         'bill_date': req.body.bill_date + 'T00:00:00.000Z',
