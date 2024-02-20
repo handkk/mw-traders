@@ -261,27 +261,24 @@ exports.customerBills = (req, res) => {
                 if (req.body.bill_date) {
                     dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
                 }
-                customerModel.find({}).then(async (customers) => {
+                bill_printModel.find({}).then(async (customers) => {
                     let all_customers = customers;
-                    await all_customers.forEach(async (c) => {
-                        // let bills = await getBillsByCustomer(req.body.bill_date, [c._id]);
-                        // console.log('\n bills after getting await: ', JSON.stringify(bills));
-                        // c.bills = bills;
-                        billModel.find({
-                            'bill_date': req.body.bill_date + 'T00:00:00.000Z',
-                            'customer_id': { $in: [c._id] }
-                        }).then(bills => {
-                            let all_bills = bills;
-                            console.log('\n all_bills: ', JSON.stringify(all_bills));
-                            c.bills = all_bills;
-                        })
-                        .catch(err => {
-                            res.status(500).send({
-                                message: 'User session ended, Please login again'
-                            })
-                        });
-                    })
-                    console.log('\n final all_customers: ', JSON.stringify(all_customers));
+                    // await all_customers.forEach(async (c) => {
+                    //     billModel.find({
+                    //         'bill_date': req.body.bill_date + 'T00:00:00.000Z',
+                    //         'customer_id': { $in: [c._id] }
+                    //     }).then(bills => {
+                    //         let all_bills = bills;
+                    //         console.log('\n all_bills: ', JSON.stringify(all_bills));
+                    //         c.bills = all_bills;
+                    //     })
+                    //     .catch(err => {
+                    //         res.status(500).send({
+                    //             message: 'User session ended, Please login again'
+                    //         })
+                    //     });
+                    // })
+                    // console.log('\n final all_customers: ', JSON.stringify(all_customers));
                     res.send(all_customers);
                 })
                 .catch(err => {
@@ -325,23 +322,41 @@ exports.createBillPrint = (req, res) => {
         console.log('\n');
         console.log('createBillPrint req: ', JSON.stringify(req));
         console.log('\n');
-        bill_printModel.findOne({'bill_date': req.body.bill_date}).then(data => {
+        bill_printModel.findOne({'bill_date': req.bill_date}).then(data => {
             console.log('\n');
             console.log('createBillPrint res data: ', JSON.stringify(data));
             console.log('\n');
-    //         req.body['created_at'] = new Date();
-    // req.body['modified_at'] = new Date();
-    // const customer = new customerModel(req.body);
-    // customer.save(customer)
-    // .then(data => {
-    //     res.send(data);
-    // })
-    // .catch(err => {
-    //     res.status(500).send({
-    //         message: err.message || 'Save operation is not occured'
-    //     });
-    // })
-            res.send(data);
+            if (!data) {
+                req['created_at'] = new Date();
+                req['modified_at'] = new Date();
+                const bill_print = new bill_printModel(req);
+                bill_print.save(bill_print)
+                .then(bill_printdata => {
+                    res.send(bill_printdata);
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Save operation is not occured'
+                    });
+                })
+            } else if (data) {
+                const update_request_body = {
+                    'notes': req.notes,
+                    'last_amount_updated': req.last_amount_updated,
+                    'balance_amount': req.balance_amount,
+                    'collected_amount': req.collected_amount,
+                    $push: { 'bills': req.bills[0] },
+                    'modified_at': new Date()
+                }
+                bill_printModel.findOneAndUpdate({'_id': data._id}, update_request_body, { returnDocument: "after" }).then(update_bill_print => {
+                    res.send(update_bill_print);
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Save operation is not occured'
+                    });
+                })
+            }
         })
         .catch(err => {
             return err;

@@ -165,7 +165,7 @@ exports.createBill = (req, res) => {
                                                     'last_amount_updated': customer_data.last_amount_updated,
                                                     'balance_amount': customer_data.balance_amount,
                                                     'collected_amount': customer_data.collected_amount,
-                                                    'bills': newbilldata
+                                                    'bills': [newbilldata]
                                                 }
                                                 var bill_Prints = customerController.createBillPrint(request_body, res);
                                             } else {
