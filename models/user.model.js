@@ -39,6 +39,19 @@ var user = new mongoose.Schema({
         type: String,
         default: ''
     },
+    apps: {
+        type: schema.Types.Mixed,
+        default: {
+            admin: false,
+            customers: false,
+            farmer: false,
+            vegetable: false,
+            user: false,
+            bill: false,
+            collection: false,
+            billprint: false
+        }
+    },
     created_at: {
         type: Date,
         default: new Date()
