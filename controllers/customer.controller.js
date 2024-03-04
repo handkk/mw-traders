@@ -280,7 +280,7 @@ exports.customerBills = (req, res) => {
                                 'customer_id': c['customer_id']
                             }
                         };
-                        var collections = await collectionsController.getCollectionsByCustomer(request);
+                        var collections = await collectionsController.getCollectionsByCustomer(request, res);
                         console.log('\n');
                         console.log('collections: ', JSON.stringify(collections));
                         console.log('\n');
