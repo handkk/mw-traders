@@ -278,11 +278,11 @@ exports.customerBills = (req, res) => {
                             'sessionId': req.body.sessionId,
                             'customer_id': c['customer_id']
                         };
-                        var collectionsController = await collectionsController.getCollectionsByCustomer(request);
+                        var collections = await collectionsController.getCollectionsByCustomer(request);
                         console.log('\n');
-                        console.log('collectionsController: ', JSON.stringify(collectionsController));
+                        console.log('collections: ', JSON.stringify(collections));
                         console.log('\n');
-                        c['collections'] = collectionsController;
+                        c['collections'] = collections;
                     });
 
                     // await all_customers.forEach(async (c) => {
