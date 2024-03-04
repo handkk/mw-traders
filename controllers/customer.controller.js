@@ -332,7 +332,7 @@ exports.createBillPrint = (req, res) => {
         console.log('createBillPrint req: ', JSON.stringify(req));
         console.log('\n');
         const date1 = moment(req['bill_date']).format('YYYY-MM-DD') + 'T00:00:00.000Z';
-        bill_printModel.findOne({'bill_date': date1}).then(data => {
+        bill_printModel.findOne({'bill_date': date1, 'cusomer_id': req['cusomer_id']}).then(data => {
             console.log('\n');
             console.log('createBillPrint res data: ', JSON.stringify(data));
             console.log('\n');

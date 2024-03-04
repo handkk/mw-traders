@@ -37,6 +37,11 @@ var bill_print = new mongoose.Schema({
         type: Array,
         default: []
     },
+    cusomer_id: {
+        type: String,
+        default: '',
+        required: true
+    },
     created_at: {
         type: Date
     },
