@@ -6,6 +6,8 @@ const fs = require("fs");
 const PDFDocument = require("pdfkit-table");
 var bill_printModel = require('../models/bill_print.model');
 const moment = require('moment');
+var collectionsModel = require('../models/collection.model');
+var collectionsController = require('../controllers/collections.controller');
 
 // Get Customers
 exports.getCustomers = (req, res) => {
@@ -264,13 +266,25 @@ exports.customerBills = (req, res) => {
                 }
                 bill_printModel.find(dateQuery).then(async (customers) => {
                     let all_customers = customers;
-                    all_customers.forEach(c => {
+                    all_customers.forEach(async (c) => {
                         c['balance'] = c['collected_amount'] - c['last_amount_updated'];
                         c['bill_amount'] = 0;
+                        c['collections'] = [];
                         c.bills.forEach(b => {
                             c['bill_amount'] = c['bill_amount'] + b['total_amount']
-                        })
+                        });
+                        let request = {
+                            'userId': req.body.userId,
+                            'sessionId': req.body.sessionId,
+                            'customer_id': c['customer_id']
+                        };
+                        var collectionsController = await collectionsController.getCollectionsByCustomer(request);
+                        console.log('\n');
+                        console.log('collectionsController: ', JSON.stringify(collectionsController));
+                        console.log('\n');
+                        c['collections'] = collectionsController;
                     });
+
                     // await all_customers.forEach(async (c) => {
                     //     billModel.find({
                     //         'bill_date': req.body.bill_date + 'T00:00:00.000Z',

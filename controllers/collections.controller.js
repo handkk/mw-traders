@@ -161,3 +161,36 @@ exports.deleteCollection = (req, res) => {
         });
     });   
 }
+
+// Get Collections by Customer
+exports.getCollectionsByCustomer = (req, res) => {
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
+    }
+    const userreq = {
+        'userId': req.body.userId,
+        'sessionId': req.body.sessionId
+    }
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            var query = collectionModel.find({ 'customer_id': req.body['customer_id'] });
+            query.exec().then(collectionsData => {
+                res.send(collectionsData);
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Not able to fetch the collections'
+                })
+            })
+        } else {
+            res.status(500).send({
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'Not able to fetch the collections'
+        })
+    })
+}
