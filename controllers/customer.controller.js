@@ -273,36 +273,12 @@ exports.customerBills = (req, res) => {
                         c.bills.forEach(b => {
                             c['bill_amount'] = c['bill_amount'] + b['total_amount']
                         });
-                        let request = {
-                            'body': {
-                                'userId': user.userId,
-                                'sessionId': user.sessionId,
-                                'customer_id': c['customer_id']
-                            }
-                        };
-                        var collections = await collectionsController.getCollectionsByCustomer(request, res);
+                        var collections = await getCollectionsByCustomer(c['customer_id']);
                         console.log('\n');
                         console.log('collections: ', JSON.stringify(collections));
                         console.log('\n');
                         c['collections'] = collections;
                     });
-
-                    // await all_customers.forEach(async (c) => {
-                    //     billModel.find({
-                    //         'bill_date': req.body.bill_date + 'T00:00:00.000Z',
-                    //         'customer_id': { $in: [c._id] }
-                    //     }).then(bills => {
-                    //         let all_bills = bills;
-                    //         console.log('\n all_bills: ', JSON.stringify(all_bills));
-                    //         c.bills = all_bills;
-                    //     })
-                    //     .catch(err => {
-                    //         res.status(500).send({
-                    //             message: 'User session ended, Please login again'
-                    //         })
-                    //     });
-                    // })
-                    // console.log('\n final all_customers: ', JSON.stringify(all_customers));
                     res.send(all_customers);
                 })
                 .catch(err => {
@@ -392,4 +368,14 @@ exports.createBillPrint = (req, res) => {
     } catch (e) {
         console.log('create Bill Print catch block ', e);
     }
+}
+
+function getCollectionsByCustomer (customer_id) {
+    var query = collectionsModel.find({ 'customer_id': customer_id });
+    query.exec().then(collectionsData => {
+        return collectionsData;
+    })
+    .catch(err => {
+        return [];
+    })
 }
