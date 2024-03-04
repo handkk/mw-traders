@@ -274,9 +274,11 @@ exports.customerBills = (req, res) => {
                             c['bill_amount'] = c['bill_amount'] + b['total_amount']
                         });
                         let request = {
-                            'userId': req.body.userId,
-                            'sessionId': req.body.sessionId,
-                            'customer_id': c['customer_id']
+                            'body': {
+                                'userId': user.userId,
+                                'sessionId': user.sessionId,
+                                'customer_id': c['customer_id']
+                            }
                         };
                         var collections = await collectionsController.getCollectionsByCustomer(request);
                         console.log('\n');
