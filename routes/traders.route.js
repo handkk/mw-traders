@@ -50,5 +50,6 @@ router.post('/customer_bills', customerController.customerBills);
 router.post('/new-collection', collectionController.createCollection);
 router.post('/collections', collectionController.getCollections);
 router.delete('/collection/:id', collectionController.deleteCollection);
+router.post('/customer-collections/:id', collectionController.getCollectionsByCustomer);
 
 module.exports = router;
