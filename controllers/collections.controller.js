@@ -14,7 +14,7 @@ exports.getCollections = (req, res) => {
     }
     userModel.findOne(userreq).then(user => {
         if (user) {
-            const limit = req.body.limit ? req.body.limit : 1000;
+            const limit = req.body.limit ? req.body.limit : 10000;
             const skip = req.body.skip ? (req.body.skip - 1) : 0;
             collectionModel.count().then(count => {
                 var query = collectionModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
