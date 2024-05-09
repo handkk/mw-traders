@@ -22,6 +22,21 @@ var collection = new mongoose.Schema({
         type: String,
         default: ''
     },
+    collected_name: {
+        type: String,
+        required: true,
+        default: 'admin'
+    },
+    collected_user_name: {
+        type: String,
+        required: true,
+        default: 'admin'
+    },
+    collected_user_id: {
+        type: String,
+        required: true,
+        default: '6497d8551ca77b54add93167'
+    },
     created_at: {
         type: Date
     },

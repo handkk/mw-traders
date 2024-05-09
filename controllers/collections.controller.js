@@ -65,43 +65,49 @@ exports.createCollection = (req, res) => {
             };
             req.body['created_at'] = new Date();
             req.body['modified_at'] = new Date();
-            const collection = new collectionModel(req.body);
-            collection.save(collection)
-            .then(newbilldata => {
-                customerModel.findOne({'_id': collectiondata.customer_id}).then(customer_data => {
-                    if (customer_data) {
-                        const amount = customer_data.balance_amount > 0 ? customer_data.balance_amount - req.body.amount : 0;
-                        const collected_amount = customer_data.collected_amount + req.body.amount;
-                        const update_amount = { 
-                            'balance_amount': amount,
-                            'collected_amount': collected_amount,
-                            'last_amount_updated': req.body.amount
-                        };
-                        customerModel.updateOne({'_id': collectiondata.customer_id}, update_amount).then(updateddata => {
-                            if (updateddata) {
-                                res.send(newbilldata);
-                            } else {
-                                res.status(403).send({
-                                    message: 'Customer details not updated'
+            req.body['collected_name'] = user['name'];
+            req.body['collected_user_name'] = user['username'];
+            req.body['collected_user_id'] = user['userId'];
+            customerModel.findOne({'_id': collectiondata.customer_id}).then(customer_data => {
+                if (customer_data) {
+                    if (customer_data.balance_amount > 0) {
+                        const collection = new collectionModel(req.body);
+                        collection.save(collection)
+                        .then(newbilldata => {
+                            const amount = customer_data.balance_amount - req.body.amount;
+                            const collected_amount = customer_data.collected_amount + req.body.amount;
+                            const update_amount = { 
+                                'balance_amount': amount,
+                                'collected_amount': collected_amount,
+                                'last_amount_updated': req.body.amount
+                            };
+                            customerModel.updateOne({'_id': collectiondata.customer_id}, update_amount).then(updateddata => {
+                                if (updateddata) {
+                                    res.send(newbilldata);
+                                } else {
+                                    res.status(403).send({
+                                        message: 'Customer details not updated'
+                                    });
+                                }
+                            })
+                            .catch(err => {
+                                res.status(500).send({
+                                    message: err.message || 'Update operation is not occured'
                                 });
-                            }
+                            })
                         })
                         .catch(err => {
                             res.status(500).send({
-                                message: err.message || 'Update operation is not occured'
+                                message: err.message || 'Save operation is not occured'
                             });
                         })
-                    } else {
-                        res.status(403).send({
-                            message: 'Customer not found'
-                        });
                     }
-                })
-                .catch(err => {
-                    res.status(500).send({
-                        message: err.message || 'Save operation is not occured'
+                    
+                } else {
+                    res.status(403).send({
+                        message: 'Customer not found'
                     });
-                })
+                }
             })
             .catch(err => {
                 res.status(500).send({
