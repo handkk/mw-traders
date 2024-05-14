@@ -39,6 +39,10 @@ var customer = new mongoose.Schema({
     },
     modified_at: {
         type: Date
+    },
+    customerCollection: {
+        type: Array,
+        default: []
     }
 });
 
