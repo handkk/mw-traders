@@ -151,81 +151,76 @@ exports.createBill = (req, res) => {
                                             const date = req.body['bill_date'];
                                             req.body['bill_date'] = moment(date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
                                             const bill = new billModel(req.body);
+                                            bill.save(bill)
+                                                .then(newbilldata => {
+                                                    const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
+                                                    customerData['balance_amount'] = customer_balance_amount;
 
-                                            console.log('customerData', customerData)
-
-                                            const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
-
-                                            if (existingCollection) {
-                                                existingCollection.records.push({ ...req.body });
-                                            } else {
-                                                // Create a new collection with the provided bill date
-                                                customerData.customerCollection.push({
-                                                    bill_date: req.body['bill_date'],
-                                                    customer_name: req.body.customer_name,
-                                                    customer_id: req.body.customer_id,
-                                                    records: [req.body],
-                                                });
-                                            }
-                                            customerModel.findOneAndUpdate({ '_id': req.body.customer_id }, { ...customerData }, { returnDocument: "after" })
-                                                .then(cus => {
-                                                    console.log('cus', cus)
-
+                                                    if (existingCollection) {
+                                                        existingCollection.records.push({ ...req.body });
+                                                    } else {
+                                                        // Create a new collection with the provided bill date
+                                                        customerData.customerCollection.push({
+                                                            bill_date: req.body['bill_date'],
+                                                            customer_name: req.body.customer_name,
+                                                            customer_id: req.body.customer_id,
+                                                            records: [req.body],
+                                                        });
+                                                    }
+                                                    customerModel.findOneAndUpdate({ '_id': req.body.customer_id }, { ...customerData }, { returnDocument: "after" })
+                                                        .then(cus => {
+                                                            res.send(newbilldata);
+                                                        })
+                                                        .catch(err => {
+                                                            res.status(500).send({
+                                                                message: err.message || 'Save operation is not occured'
+                                                            });
+                                                        })
                                                 })
-                                                bill.save()
-                                                console.log('customer', customer)
-                                            // console.log('customer', customer)
-                                            // const customer = customerModel.findById({ '_id': req.body.customer_id });
-
-
-
-
-
-
-
-                                                // .then(custData=>{
-                                                //     console.log('custData', custData)
-
-                                                //     const customer =  customerModel.findById({'_id': req.body.customer_id});
-                                                //     console.log('customer', customer)
-                                                //     const existingCollection = customer.customerCollection.find(collection => collection.bill_date.toString() ===  req.body['bill_date']);
-                                                //     console.log('existingCollection', existingCollection)
-                                                // })
-                                                // .then(newbilldata => {
-                                                //     const balance_amount = { 'balance_amount': customer_balance_amount, $push: { 'bills': req.body } };
-                                                //     customerModel.findOneAndUpdate({'_id': billdata.customer_id}, balance_amount, { returnDocument: "after" }).then(customer_data => {
-                                                //         if (customer_data) {
-                                                //             res.send(newbilldata);
-                                                //             const request_body = {
-                                                //                 'bill_date': date,
-                                                //                 'name': customer_data.name,
-                                                //                 'phone_number': customer_data.phone_number,
-                                                //                 'address': customer_data.address,
-                                                //                 'notes': customer_data.notes,
-                                                //                 'last_amount_updated': customer_data.last_amount_updated,
-                                                //                 'balance_amount': customer_data.balance_amount,
-                                                //                 'collected_amount': customer_data.collected_amount,
-                                                //                 'bills': [newbilldata],
-                                                //                 'cusomer_id': customer_data._id
-                                                //             }
-                                                //             var bill_Prints = customerController.createBillPrint(request_body, res);
-                                                //         } else {
-                                                //             res.status(403).send({
-                                                //                 message: 'Customer not found'
-                                                //             });
-                                                //         }
-                                                //     })
-                                                //     .catch(err => {
-                                                //         res.status(500).send({
-                                                //             message: err.message || 'Save operation is not occured'
-                                                //         });
-                                                //     })
-                                                // })
                                                 .catch(err => {
                                                     res.status(500).send({
                                                         message: err.message || 'Save operation is not occured'
                                                     });
                                                 })
+                                            // console.log('customer', customer)
+                                            // const customer = customerModel.findById({ '_id': req.body.customer_id });
+                                            // .then(custData=>{
+                                            //     console.log('custData', custData)
+                                            //     const customer =  customerModel.findById({'_id': req.body.customer_id});
+                                            //     console.log('customer', customer)
+                                            //     const existingCollection = customer.customerCollection.find(collection => collection.bill_date.toString() ===  req.body['bill_date']);
+                                            //     console.log('existingCollection', existingCollection)
+                                            // })
+                                            // .then(newbilldata => {
+                                            //     const balance_amount = { 'balance_amount': customer_balance_amount, $push: { 'bills': req.body } };
+                                            //     customerModel.findOneAndUpdate({'_id': billdata.customer_id}, balance_amount, { returnDocument: "after" }).then(customer_data => {
+                                            //         if (customer_data) {
+                                            //             res.send(newbilldata);
+                                            //             const request_body = {
+                                            //                 'bill_date': date,
+                                            //                 'name': customer_data.name,
+                                            //                 'phone_number': customer_data.phone_number,
+                                            //                 'address': customer_data.address,
+                                            //                 'notes': customer_data.notes,
+                                            //                 'last_amount_updated': customer_data.last_amount_updated,
+                                            //                 'balance_amount': customer_data.balance_amount,
+                                            //                 'collected_amount': customer_data.collected_amount,
+                                            //                 'bills': [newbilldata],
+                                            //                 'cusomer_id': customer_data._id
+                                            //             }
+                                            //             var bill_Prints = customerController.createBillPrint(request_body, res);
+                                            //         } else {
+                                            //             res.status(403).send({
+                                            //                 message: 'Customer not found'
+                                            //             });
+                                            //         }
+                                            //     })
+                                            //     .catch(err => {
+                                            //         res.status(500).send({
+                                            //             message: err.message || 'Save operation is not occured'
+                                            //         });
+                                            //     })
+                                            // })
                                         } else {
                                             res.status(403).send({ message: `Customer details not found` });
                                         }

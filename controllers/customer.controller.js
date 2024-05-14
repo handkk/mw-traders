@@ -252,11 +252,21 @@ function filterCustomerCollectionByDate(customerData, passedDate) {
     let filteredData = []
 
     for (const dataObject of customerData) {
-        console.log('dataObject', dataObject)
+        // console.log('dataObject', dataObject)
         // Check if customerCollection exists within the current data object
         if (dataObject.customerCollection) {
             // Filter the customerCollection of the current data object
            let filteredCollection = dataObject.customerCollection.filter(collection => {
+            console.log('collection: ', collection);
+            let totalAmount;
+            if (collection.records) {
+                let vegetables = [];
+                vegetables = collection.records;
+                totalAmount = vegetables.reduce((count, item) => {
+                    return item.total_amount + count;
+                }, 0)
+            }
+            collection['total_amount'] = totalAmount;
                 // Direct string comparison between bill date and passed date
                 return collection.bill_date == passedDate
             });
@@ -291,32 +301,33 @@ exports.customerBills = (req, res) => {
                 var query = customerModel.find({}).sort({ 'modified_at': -1 });
                 query.exec().then(customersData => {
                     let data = filterCustomerCollectionByDate(customersData, req.body.bill_date + 'T00:00:00.000Z')
+                    if (data) {}
                     res.send(data);
                     console.log('data', data)
                 })
                 // console.log('customers', customers)
-                bill_printModel.find(dateQuery).then(async (customers) => {
-                    let all_customers = customers;
-                    all_customers.forEach(async (c) => {
-                        c['balance'] = c['collected_amount'] - c['last_amount_updated'];
-                        c['bill_amount'] = 0;
-                        c['collections'] = [];
-                        c.bills.forEach(b => {
-                            c['bill_amount'] = c['bill_amount'] + b['total_amount']
-                        });
-                        var collections = await getCollectionsByCustomer(c['customer_id']);
-                        console.log('\n');
-                        console.log('collections: ', JSON.stringify(collections));
-                        console.log('\n');
-                        c['collections'] = collections;
-                    });
-                    res.send(all_customers);
-                })
-                .catch(err => {
-                    res.status(500).send({
-                        message: err.message || 'Not able to fetch the bills'
-                    })
-                })
+                // bill_printModel.find(dateQuery).then(async (customers) => {
+                //     let all_customers = customers;
+                //     all_customers.forEach(async (c) => {
+                //         c['balance'] = c['collected_amount'] - c['last_amount_updated'];
+                //         c['bill_amount'] = 0;
+                //         c['collections'] = [];
+                //         c.bills.forEach(b => {
+                //             c['bill_amount'] = c['bill_amount'] + b['total_amount']
+                //         });
+                //         var collections = await getCollectionsByCustomer(c['customer_id']);
+                //         console.log('\n');
+                //         console.log('collections: ', JSON.stringify(collections));
+                //         console.log('\n');
+                //         c['collections'] = collections;
+                //     });
+                //     res.send(all_customers);
+                // })
+                // .catch(err => {
+                //     res.status(500).send({
+                //         message: err.message || 'Not able to fetch the bills'
+                //     })
+                // })
             } else {
                 res.status(500).send({
                     message: 'User session ended, Please login again'
