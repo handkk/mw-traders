@@ -257,19 +257,24 @@ function filterCustomerCollectionByDate(customerData, passedDate) {
         if (dataObject.customerCollection) {
             // Filter the customerCollection of the current data object
            let filteredCollection = dataObject.customerCollection.filter(collection => {
-            console.log('collection: ', collection);
+            // console.log('collection: ', collection);
             let totalAmount;
-            if (collection.records) {
-                let vegetables = [];
-                vegetables = collection.records;
-                totalAmount = vegetables.reduce((count, item) => {
-                    return item.total_amount + count;
-                }, 0)
-            }
-            collection['total_amount'] = totalAmount;
+            let recordsCount;
+            // if (collection.records) {
+            //     let vegetables = [];
+            //     vegetables = collection.records;
+            //     totalAmount = vegetables.reduce((count, item) => {
+            //         return item.total_amount + count;
+            //     }, 0)
+            // }
+            // collection['total_amount'] = totalAmount;
                 // Direct string comparison between bill date and passed date
                 return collection.bill_date == passedDate
             });
+            // recordsCount = collection.records.length;
+            //     if (recordsCount > 2) {
+
+            //     }
 
             // Add the filtered collection to the final result
             filteredData.push(...filteredCollection);
@@ -281,6 +286,43 @@ function filterCustomerCollectionByDate(customerData, passedDate) {
 
     return filteredData;
 }
+
+function returnSum(customerData) {
+    return customerData.reduce((count, item) => {
+        return item.total_amount + count;
+    }, 0)
+}
+
+function maxRecordsCount(customerData) {
+    let filteredArray = [];
+    for (const dataObject of customerData) {
+        if (dataObject.records.length > 3) {
+            let firstPart = dataObject.records.slice(0, 3)
+            // console.log('firstPart: ', firstPart);
+            let secondPart = dataObject.records.slice(3)
+            // console.log('secondPart: ', secondPart);
+            let firstData = {...dataObject}
+            firstData.records = firstPart;
+            let secondData = {...dataObject}
+            secondData.records = secondPart;
+            secondData.total_amount = returnSum(secondData.records);
+            firstData.total_amount = returnSum(firstData.records);
+            // firstData['collections'] = await collectionsController.getRecentCollections(firstData.customer_id);
+            firstData['collections'] = [];
+            secondData['collections'] = [];
+            filteredArray.push(firstData);
+            filteredArray.push(secondData);
+        } else {
+            dataObject['total_amount'] = returnSum(dataObject.records);
+            dataObject['collections'] = [];
+            // dataObject['collections'] = await collectionsController.getRecentCollections(dataObject.customer_id);
+            filteredArray.push(dataObject)
+        }
+    }
+    return filteredArray;
+    // console.log('filteredArray: ', filteredArray);
+}
+
 // Print Bills
 exports.customerBills = (req, res) => {
     try {
@@ -301,9 +343,12 @@ exports.customerBills = (req, res) => {
                 var query = customerModel.find({}).sort({ 'modified_at': -1 });
                 query.exec().then(customersData => {
                     let data = filterCustomerCollectionByDate(customersData, req.body.bill_date + 'T00:00:00.000Z')
-                    if (data) {}
-                    res.send(data);
-                    console.log('data', data)
+                    if (data) {
+                        let final = maxRecordsCount(data);
+                        res.send(final);
+                        // res.send(data);
+                    }
+                    // console.log('data', data)
                 })
                 // console.log('customers', customers)
                 // bill_printModel.find(dateQuery).then(async (customers) => {
@@ -362,14 +407,8 @@ exports.customerBills = (req, res) => {
 // Bill Print Create
 exports.createBillPrint = (req, res) => {
     try {
-        console.log('\n');
-        console.log('createBillPrint req: ', JSON.stringify(req));
-        console.log('\n');
         const date1 = moment(req['bill_date']).format('YYYY-MM-DD') + 'T00:00:00.000Z';
         bill_printModel.findOne({ 'bill_date': date1, 'cusomer_id': req['cusomer_id'] }).then(data => {
-            console.log('\n');
-            console.log('createBillPrint res data: ', JSON.stringify(data));
-            console.log('\n');
             if (!data) {
                 req['created_at'] = new Date();
                 req['modified_at'] = new Date();

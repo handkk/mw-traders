@@ -200,3 +200,15 @@ exports.getCollectionsByCustomer = (req, res) => {
         })
     })
 }
+
+exports.getRecentCollections = (customer_id) => {
+    // console.log('customer_id: ', customer_id);
+    var query = collectionModel.find({ 'customer_id': customer_id }).sort({'created_at': -1}).skip(0 * 2).limit(2);
+    query.exec().then(collectionsData => {
+        // console.log('collectionsData: ', collectionsData);
+        return collectionsData;
+    })
+    .catch(err => {
+        return [];
+    })
+}
