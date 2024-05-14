@@ -2,3 +2,4 @@
 /dist/
 /traders/
 /.netrc.txt
+package-lock.json
