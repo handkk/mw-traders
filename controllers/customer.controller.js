@@ -8,7 +8,7 @@ var bill_printModel = require('../models/bill_print.model');
 const moment = require('moment');
 var collectionsModel = require('../models/collection.model');
 var collectionsController = require('../controllers/collections.controller');
-
+var maxcount=3
 // Get Customers
 exports.getCustomers = (req, res) => {
     const limit = req.body.limit ? req.body.limit : 1000;
@@ -296,10 +296,10 @@ function returnSum(customerData) {
 function maxRecordsCount(customerData) {
     let filteredArray = [];
     for (const dataObject of customerData) {
-        if (dataObject.records.length > 3) {
-            let firstPart = dataObject.records.slice(0, 3)
+        if (dataObject.records.length > maxcount+1) {
+            let firstPart = dataObject.records.slice(0, maxcount)
             // console.log('firstPart: ', firstPart);
-            let secondPart = dataObject.records.slice(3)
+            let secondPart = dataObject.records.slice(maxcount)
             // console.log('secondPart: ', secondPart);
             let firstData = {...dataObject}
             firstData.records = firstPart;
@@ -319,7 +319,20 @@ function maxRecordsCount(customerData) {
             filteredArray.push(dataObject)
         }
     }
-    return filteredArray;
+    let hasCollectionExceedingLimit = filteredArray.some((item) => item.records.length > maxcount+1);
+    console.log('hasCollectionExceedingLimit', hasCollectionExceedingLimit)
+    if (hasCollectionExceedingLimit) {
+        maxRecordsCount(filteredArray)
+    }else{
+        console.log('filteredArray', filteredArray)
+
+        // console.log('filteredArray', filteredArray)
+        // res.send(filteredArray)
+        return filteredArray
+    //   console.log('filteredArray >>>>>', filteredArray)
+
+    }
+   
     // console.log('filteredArray: ', filteredArray);
 }
 
@@ -341,13 +354,27 @@ exports.customerBills = (req, res) => {
 
 
                 var query = customerModel.find({}).sort({ 'modified_at': -1 });
-                query.exec().then(customersData => {
+                query.exec().then(async customersData => {
                     let data = filterCustomerCollectionByDate(customersData, req.body.bill_date + 'T00:00:00.000Z')
-                    if (data) {
-                        let final = maxRecordsCount(data);
-                        res.send(final);
-                        // res.send(data);
+                    if(data){
+
+                        res.send(data);
+                    }else{
+                        res.send([])
                     }
+                    // console.log('finsssal', final)
+
+                    // if (data) {
+                    //     let final = maxRecordsCount(data,res);
+                    //     console.log('final', final)
+                    //     // for (let item of final){
+                    //     //     if(item.records.length>maxcount){
+
+                    //     //     }
+                    //     // }
+                    //     // res.send(final);
+                    //     // res.send(data);
+                    // }
                     // console.log('data', data)
                 })
                 // console.log('customers', customers)
