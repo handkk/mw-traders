@@ -151,20 +151,23 @@ exports.createBill = (req, res) => {
                                             const date = req.body['bill_date'];
                                             req.body['bill_date'] = moment(date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
                                             const bill = new billModel(req.body);
+                                            console.log('bill', bill)
                                             bill.save(bill)
                                                 .then(newbilldata => {
+                                                    console.log('newbilldata', newbilldata['_id'])
                                                     const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
                                                     customerData['balance_amount'] = customer_balance_amount;
 
                                                     if (existingCollection) {
-                                                        existingCollection.records.push({ ...req.body });
+                                                        existingCollection.records.push({ ...req.body,billId:newbilldata['_id'] });
                                                     } else {
                                                         // Create a new collection with the provided bill date
                                                         customerData.customerCollection.push({
                                                             bill_date: req.body['bill_date'],
                                                             customer_name: req.body.customer_name,
                                                             customer_id: req.body.customer_id,
-                                                            records: [req.body],
+                                                            records: [{ ...req.body,billId:newbilldata['_id'] }],
+                                                           
                                                         });
                                                     }
                                                     customerModel.findOneAndUpdate({ '_id': req.body.customer_id }, { ...customerData }, { returnDocument: "after" })
