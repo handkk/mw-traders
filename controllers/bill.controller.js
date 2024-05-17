@@ -151,23 +151,20 @@ exports.createBill = (req, res) => {
                                             const date = req.body['bill_date'];
                                             req.body['bill_date'] = moment(date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
                                             const bill = new billModel(req.body);
-                                            console.log('bill', bill)
                                             bill.save(bill)
                                                 .then(newbilldata => {
-                                                    console.log('newbilldata', newbilldata['_id'])
                                                     const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
                                                     customerData['balance_amount'] = customer_balance_amount;
 
                                                     if (existingCollection) {
-                                                        existingCollection.records.push({ ...req.body,billId:newbilldata['_id'] });
+                                                        existingCollection.records.push({ ...req.body, billId: newbilldata['_id'] });
                                                     } else {
                                                         // Create a new collection with the provided bill date
                                                         customerData.customerCollection.push({
                                                             bill_date: req.body['bill_date'],
                                                             customer_name: req.body.customer_name,
                                                             customer_id: req.body.customer_id,
-                                                            records: [{ ...req.body,billId:newbilldata['_id'] }],
-                                                           
+                                                            records: [{ ...req.body, billId: newbilldata['_id'] }],
                                                         });
                                                     }
                                                     customerModel.findOneAndUpdate({ '_id': req.body.customer_id }, { ...customerData }, { returnDocument: "after" })
@@ -286,97 +283,34 @@ exports.deleteBill = (req, res) => {
                             message: `Cannot delete user with id ${id}`
                         });
                     } else {
-                        console.log('\n data: ', data);
-                        console.log('\n id: ', id);
                         customerId = data.customer_id;
                         bill_date = data.bill_date;
-
-                        // find
                         customerModel.findOne({ '_id': customerId }).then(customer => {
-                            const deductableAmount = data.customer_balance_amount - data.total_amount;
+                            const deductableAmount = customer.balance_amount - data.total_amount;
                             let customer_bills = customer;
-                            console.log('\n customer_bills: ', customer_bills);
-
-                            const billInd = customer_bills.bills.findIndex(b => b._id === id);
-                            customer_bills.bills.splice(billInd, 1);
-                            const balanceAmount = { 'balance_amount': deductableAmount, 'bills': customer_bills.bills };
-                            customerModel.updateOne({ '_id': customerId }, balanceAmount, { returnDocument: "after" }).then(customerUpdated => {
-                                if (customerUpdated) {
-                                    console.log('\n customerUpdated: ', customerUpdated);
-                                    console.log('\n customer_bills.bills: ', customer_bills.bills);
-                                    if (customer_bills.bills.length > 0) {
-                                        billPrintModel.findOne({ 'bill_date': bill_date, 'cusomer_id': customerId }).then(billPrintFound => {
-                                            console.log('\n billPrintFound: ', billPrintFound);
-                                            // if (billPrintFound) {
-                                            //     let sameBill = false;
-                                            //     let otherBill = false;
-                                            //     if (billPrintFound.bills.length > 0 && billPrintFound.bills.length > 1) {
-                                            //         billPrintFound.bills.forEach(b => {
-                                            //             if (b['bill_date'] === bill_date) {
-                                            //                 sameBill = true;
-                                            //             } else if (b['bill_date'] !== bill_date) {
-                                            //                 otherBill = true;
-                                            //             }
-                                            //         });
-                                            //     } else if (billPrintFound.bills.length > 0 && billPrintFound.bills.length === 1) {
-                                            //         billPrintModel.findOneAndRemove({'bill_date': bill_date, 'cusomer_id': customerId},
-                                            //         { returnDocument: "after" })
-                                            //         .then(bill => {
-                                            //             billModel.findOneAndRemove({'_id': id}).then(billRemoved => {
-                                            //                 res.send({ success: true, message: "Bill Deleted Successfully" });
-                                            //             })
-                                            //             .catch(err => {
-                                            //                 res.status(500).send({
-                                            //                     message: err.message || 'bill not removed'
-                                            //                 });
-                                            //             })
-                                            //         })
-                                            //         .catch(err => {
-                                            //             res.status(500).send({
-                                            //                 message: err.message || 'delete operation is not occured'
-                                            //             });
-                                            //         })
-                                            //     }
-                                            // }
-
-                                            billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
-                                                res.send({ success: true, message: "Bill Deleted Successfully" });
-                                            })
-                                                .catch(err => {
-                                                    res.status(500).send({
-                                                        message: err.message || 'bill not removed'
-                                                    });
-                                                })
-                                        })
-                                            .catch(err => {
-                                                res.status(500).send({
-                                                    message: err.message || 'bill print not update'
-                                                });
-                                            })
-                                    } else if (customer_bills.bills.length === 0) {
-                                        billPrintModel.findOneAndRemove({ 'bill_date': bill_date, 'cusomer_id': customerId },
-                                            { returnDocument: "after" })
-                                            .then(bill => {
-                                                billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
-                                                    res.send({ success: true, message: "Bill Deleted Successfully" });
-                                                })
-                                                    .catch(err => {
-                                                        res.status(500).send({
-                                                            message: err.message || 'bill not removed'
-                                                        });
-                                                    })
-                                            })
-                                            .catch(err => {
-                                                res.status(500).send({
-                                                    message: err.message || 'delete operation is not occured'
-                                                });
-                                            })
-                                    }
-                                }
-                            })
+                            const billDate = moment(bill_date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
+                            customer_bills['balance_amount'] = deductableAmount;
+                            let existingCollectionsIndex;
+                            existingCollectionsIndex = customer_bills.customerCollection.findIndex(collection => collection.bill_date === billDate);
+                            const billInd = customer_bills.customerCollection[existingCollectionsIndex].records.findIndex(b => b.billId === id);
+                            customer_bills.customerCollection[existingCollectionsIndex].records.splice(billInd, 1);
+                            if (customer_bills.customerCollection[existingCollectionsIndex].records.length === 0) {
+                                customer_bills.customerCollection.splice(existingCollectionsIndex, 1);
+                            }
+                            customerModel.findOneAndUpdate({ '_id': customerId }, { ...customer_bills }, { returnDocument: "after" })
+                                .then(cus => {
+                                    billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
+                                        res.send({ success: true, message: "Bill Deleted Successfully" });
+                                    })
+                                    .catch(err => {
+                                        res.status(500).send({
+                                            message: err.message || 'bill not removed'
+                                        });
+                                    })
+                                })
                                 .catch(err => {
                                     res.status(500).send({
-                                        message: err.message || 'customer not updated'
+                                        message: err.message || 'Save operation is not occured'
                                     });
                                 })
                         })
@@ -385,59 +319,6 @@ exports.deleteBill = (req, res) => {
                                     message: err.message || 'customer not found'
                                 });
                             })
-
-                        // customerModel.findOneAndUpdate({'_id': customerId}, balanceAmount, { returnDocument: "after" })
-                        // .then(customerUpdated => {
-                        //     console.log('\n customerUpdated: ', customerUpdated);
-
-                        //     billPrintModel.findOne({'bill_date': bill_date, 'cusomer_id': customerId})
-                        //     .then(bill_print => {
-                        //         console.log('\n found one bill_print: ', bill_print);
-                        //         if (bill_print) {
-                        //             let bill_printData = bill_print;
-                        //             const billInd = bill_printData.bills.findIndex(b => b._id === id);
-                        //             console.log('\n billInd: ', billInd);
-                        //             bill_printData.bills.splice(billInd, 1);
-                        //             if (bill_printData.bills.length > 0) {
-                        //                 billPrintModel.findOneAndUpdate({'bill_date': bill_date, 'cusomer_id': customerId}, 
-                        //                 { 'bills': bill_printData.bills },
-                        //                 { returnDocument: "after" })
-                        //                 .then(bill_print => {
-                        //                     if (bill_print) {
-                        //                         res.send({ success: true, message: "Bill Deleted Successfully" });
-                        //                     }
-                        //                 })
-                        //                 .catch(err => {
-                        //                     res.status(500).send({
-                        //                         message: err.message || 'delete operation is not occured'
-                        //                     });
-                        //                 })
-                        //             } else if (bill_printData.bills.length === 0) {
-                        //                 billPrintModel.findOneAndRemove({'bill_date': '2024-03-23T00:00:00.000Z', 'cusomer_id': '65fa38d142dad6952efbd60d'},
-                        //                 { returnDocument: "after" })
-                        //                 .then(bill => {
-                        //                     res.send({ success: true, message: "Bill Deleted Successfully" });
-                        //                 })
-                        //                 .catch(err => {
-                        //                     res.status(500).send({
-                        //                         message: err.message || 'delete operation is not occured'
-                        //                     });
-                        //                 })
-                        //             }
-                        //         }
-                        //     })
-                        //     .catch(err => {
-                        //         res.status(500).send({
-                        //             message: err.message || 'delete operation is not occured'
-                        //         });
-                        //     })
-
-                        // })
-                        // .catch(err => {
-                        //     res.status(500).send({
-                        //         message: err.message || 'delete operation is not occured'
-                        //     });
-                        // })
                     }
                 })
                 .catch(err => {

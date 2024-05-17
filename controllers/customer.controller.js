@@ -124,69 +124,30 @@ exports.dayBills = (req, res) => {
         'userId': userid,
         'sessionId': sessionId
     }
-    const billdate = req.body.bill_date + 'T00:00:00.000Z';
+    const billDate = moment(req.body.bill_date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
     userModel.findOne(userreq).then(user => {
         if (user) {
-            billModel.find({ 'bill_date': billdate }).then(bills => {
-                if (bills) {
-                    res.send(bills);
-                    // let tmpcustomers = [];
-                    // let customers = [];
-                    // let tmpcustomerids = [];
-                    // let allBillsData = bills;
-                    // allBillsData.forEach(bill => {
-                    //     tmpcustomers.push({
-                    //         'customer_name': bill.customer_name,
-                    //         'customer_id': bill.customer_id
-                    //     });
-                    // })
-                    // customers = tmpcustomers.filter((obj, index) => {
-                    //     return index === tmpcustomers.findIndex(o => obj.customer_id === o.customer_id);
-                    // });
-                    // customers.forEach(c1 => {
-                    //     tmpcustomerids.push(c1.customer_id);
-                    // });
-                    // customerModel.find({'_id': tmpcustomerids}).then(customer => {
-                    //     let allcustomer = customer;
-                    //     allBillsData.forEach((b, i) => {
-                    //         let indexCustomer = -1;
-                    //         indexCustomer = allcustomer.findIndex(ac => ac['_id'].toString() === b['customer_id']);
-                    //         if (indexCustomer !== -1) {
-                    //             b["customer_balance_amount"] = allcustomer[indexCustomer]["balance_amount"];
-                    //         }
-                    //     })
-                    //     res.send(allBillsData);
-                    // })
-                    // .catch(err => {
-                    //     res.status(500).send({
-                    //         message: err.message || 'Customers not found'
-                    //     });
-                    // });
-                    // init document
-                    // let doc = new PDFDocument({ margin: 30, size: 'A4' });
-                    // save document
-                    // console.log('\n 1 === ');
-                    // doc.pipe(fs.createWriteStream("document.pdf"));
-                    // console.log('\n 2 === ');
-                    // table
-                    // const table = { 
-                    //     title: '',
-                    //     headers: [
-                    //         { label: "Customer Name", property: 'customer_name', width: 60, renderer: null },
-                    //         { label: "Today Bill", property: 'total_amount', width: 150, renderer: null }, 
-                    //         { label: "Balance", property: 'rate', width: 100, renderer: null } 
-                    //         // { label: "Paid", property: 'price2', width: 100, renderer: null }
-                    //     ],
-                    //     datas: bills
-                    // };
-                    // console.log('\n 3 table: === ', JSON.stringify(table));
-                    // doc.table(table);
-                    // res.setHeader('Content-Type', 'application/pdf');
-                    // res.setHeader('Content-Disposition', 'attachment; filename=document.pdf');
-                    // doc.pipe(res);
-                    // console.log('\n 6 === ');
-                    // doc.end();
-                    // await res.send(doc);
+            customerModel.find({}).then(all_customers => {
+                let customers = all_customers;
+                if (customers) {
+                    let dayBills = [];
+                    customers.forEach(cus => {
+                        if (cus.customerCollection && cus.customerCollection.length > 0) {
+                            let collection;
+                            collection = cus.customerCollection.find(col => col.bill_date === billDate);
+                            if (collection) {
+                                collection['balance_amount'] = cus.balance_amount;
+                                collection['today_amount'] = 0;
+                                if (collection.records && collection.records.length > 0) {
+                                    collection.records.forEach(rec => {
+                                        collection['today_amount'] = collection['today_amount'] + rec.total_amount;
+                                    });
+                                }
+                                dayBills.push(collection);
+                            }
+                        }
+                    });
+                    res.send(dayBills);
                 } else {
                     res.send([]);
                 }
