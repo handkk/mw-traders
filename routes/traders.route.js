@@ -29,7 +29,7 @@ router.post('/customers', customerController.getCustomers);
 router.post('/customer', customerController.createCustomer);
 router.put('/customer/:id', customerController.updateCustomer);
 router.delete('/customer/:id', customerController.deleteCustomer);
-router.post('/balance_statement', customerController.customerBalanceStatement);
+router.post('/statement', customerController.customerStatement);
 
 // Vegetable apis
 router.post('/vegetable', vegetableController.createVegetable);
@@ -43,7 +43,6 @@ router.post('/new-bill', billController.createBill);
 router.delete('/bill/:id', billController.deleteBill);
 router.put('/update-bill/:id', billController.updateBill);
 router.post('/day_bills', customerController.dayBills);
-router.post('/print_bills', billController.printBills);
 router.post('/customer_bills', customerController.customerBills);
 
 // Collection apis

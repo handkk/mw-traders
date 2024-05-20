@@ -5,56 +5,6 @@ var billModel = require('../models/bill.model');
 var farmerModel = require('../models/farmer.model');
 var customerModel = require('../models/customer.model');
 const moment = require('moment');
-var customerController = require('../controllers/customer.controller');
-var billPrintModel = require('../models/bill_print.model');
-
-// Print Bills
-exports.printBills = (req, res) => {
-    const userreq = {
-        'userId': req.body.userId,
-        'sessionId': req.body.sessionId
-    }
-    userModel.findOne(userreq).then(user => {
-        if (user) {
-            const limit = req.body.limit ? req.body.limit : 1000;
-            const skip = req.body.skip ? (req.body.skip - 1) : 0;
-            let dateQuery = {};
-            if (req.body.bill_date) {
-                dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
-            }
-            customerModel.find({}).then(customers => {
-                res.send(customers);
-                // var query = billModel.find(dateQuery).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
-                // query.exec().then(billsData => {
-                //     const result = {
-                //         'data': billsData,
-                //         'total': count
-                //     };
-                //     res.send(result);
-                // })
-                // .catch(err => {
-                //     res.status(500).send({
-                //         message: err.message || 'Not able to fetch the bills'
-                //     })
-                // })
-            })
-                .catch(err => {
-                    res.status(500).send({
-                        message: err.message || 'Not able to fetch the bills'
-                    })
-                })
-        } else {
-            res.status(500).send({
-                message: 'User session ended, Please login again'
-            })
-        }
-    })
-        .catch(err => {
-            res.status(500).send({
-                message: err.message || 'Not able to fetch the bills'
-            })
-        })
-}
 
 // Get Bills
 exports.getBills = (req, res) => {
@@ -182,45 +132,6 @@ exports.createBill = (req, res) => {
                                                         message: err.message || 'Save operation is not occured'
                                                     });
                                                 })
-                                            // console.log('customer', customer)
-                                            // const customer = customerModel.findById({ '_id': req.body.customer_id });
-                                            // .then(custData=>{
-                                            //     console.log('custData', custData)
-                                            //     const customer =  customerModel.findById({'_id': req.body.customer_id});
-                                            //     console.log('customer', customer)
-                                            //     const existingCollection = customer.customerCollection.find(collection => collection.bill_date.toString() ===  req.body['bill_date']);
-                                            //     console.log('existingCollection', existingCollection)
-                                            // })
-                                            // .then(newbilldata => {
-                                            //     const balance_amount = { 'balance_amount': customer_balance_amount, $push: { 'bills': req.body } };
-                                            //     customerModel.findOneAndUpdate({'_id': billdata.customer_id}, balance_amount, { returnDocument: "after" }).then(customer_data => {
-                                            //         if (customer_data) {
-                                            //             res.send(newbilldata);
-                                            //             const request_body = {
-                                            //                 'bill_date': date,
-                                            //                 'name': customer_data.name,
-                                            //                 'phone_number': customer_data.phone_number,
-                                            //                 'address': customer_data.address,
-                                            //                 'notes': customer_data.notes,
-                                            //                 'last_amount_updated': customer_data.last_amount_updated,
-                                            //                 'balance_amount': customer_data.balance_amount,
-                                            //                 'collected_amount': customer_data.collected_amount,
-                                            //                 'bills': [newbilldata],
-                                            //                 'cusomer_id': customer_data._id
-                                            //             }
-                                            //             var bill_Prints = customerController.createBillPrint(request_body, res);
-                                            //         } else {
-                                            //             res.status(403).send({
-                                            //                 message: 'Customer not found'
-                                            //             });
-                                            //         }
-                                            //     })
-                                            //     .catch(err => {
-                                            //         res.status(500).send({
-                                            //             message: err.message || 'Save operation is not occured'
-                                            //         });
-                                            //     })
-                                            // })
                                         } else {
                                             res.status(403).send({ message: `Customer details not found` });
                                         }

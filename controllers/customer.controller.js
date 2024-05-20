@@ -97,23 +97,139 @@ exports.deleteCustomer = (req, res) => {
     if (!req.params.id) {
         return res.status(400).send({ message: 'Customer id param is required' });
     }
+    const userid = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': userid,
+        'sessionId': sessionId
+    }
     const customerid = req.params.id;
-
-    customerModel.findOneAndRemove({ '_id': customerid })
-        .then(removedCustomer => {
-            if (!removedCustomer) {
-                res.status(404).send({
-                    message: `Cannot delete customer with id ${customerid}`
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            customerModel.findOne({ '_id': customerid })
+            .then(customer => {
+                if (customer) {
+                    const customerData = customer;
+                    if (customerData.balance_amount !== 0) {
+                        const msg = "Customer Balance amount is " + customerData.balance_amount
+                        res.send({ success: false, message: msg });
+                    } else if (customerData.balance_amount === 0) {
+                        billModel.find({ 'customer_id': customerid })
+                        .then(bill => {
+                            console.log('\n bill: ', bill);
+                            if (bill && bill.length > 0) {
+                                let billIds = [];
+                                bill.forEach(b => {
+                                    billIds.push(b._id);
+                                });
+                                billModel.deleteMany({ '_id': { '$in': billIds } })
+                                .then(removed_bills => {
+                                    console.log('\n removed_bills: ', removed_bills);
+                                    collectionsModel.find({ 'customer_id': customerid })
+                                    .then(collection => {
+                                        console.log('\n collection: ', collection);
+                                        if (collection && collection.length > 0) {
+                                            let collectionIds = [];
+                                            collection.forEach(c => {
+                                                collectionIds.push(c._id);
+                                            });
+                                            collectionsModel.deleteMany({ '_id': { '$in': collectionIds } })
+                                            .then(removed_collection => {
+                                                console.log('\n removed_collection: ', removed_collection);
+                                                customerModel.findOneAndRemove({ '_id': customerid })
+                                                .then(removedCustomer => {
+                                                    if (!removedCustomer) {
+                                                        res.status(404).send({
+                                                            message: `Cannot delete customer with id ${customerid}`
+                                                        });
+                                                    } else {
+                                                        res.send({ success: true, message: "Customer Deleted Successfully" });
+                                                    }
+                                                })
+                                                .catch(err => {
+                                                    res.status(500).send({
+                                                        message: err.message || 'delete operation is not occured'
+                                                    });
+                                                })
+                                            })
+                                            .catch(err => {
+                                                res.status(500).send({
+                                                    message: err.message || 'delete operation is not occured'
+                                                });
+                                            })
+                                        } else if (collection.length === 0) {
+                                            customerModel.findOneAndRemove({ '_id': customerid })
+                                            .then(removedCustomer => {
+                                                if (!removedCustomer) {
+                                                    res.status(404).send({
+                                                        message: `Cannot delete customer with id ${customerid}`
+                                                    });
+                                                } else {
+                                                    res.send({ success: true, message: "Customer Deleted Successfully" });
+                                                }
+                                            })
+                                            .catch(err => {
+                                                res.status(500).send({
+                                                    message: err.message || 'delete operation is not occured'
+                                                });
+                                            })
+                                        }
+                                    })
+                                    .catch(err => {
+                                        res.status(500).send({
+                                            message: err.message || 'delete operation is not occured'
+                                        });
+                                    })
+                                    
+                                })
+                                .catch(err => {
+                                    res.status(500).send({
+                                        message: err.message || 'delete operation is not occured'
+                                    });
+                                })
+                            } else if (bill.length === 0) {
+                                customerModel.findOneAndRemove({ '_id': customerid })
+                                .then(removedCustomer => {
+                                    if (!removedCustomer) {
+                                        res.status(404).send({
+                                            message: `Cannot delete customer with id ${customerid}`
+                                        });
+                                    } else {
+                                        res.send({ success: true, message: "Customer Deleted Successfully" });
+                                    }
+                                })
+                                .catch(err => {
+                                    res.status(500).send({
+                                        message: err.message || 'delete operation is not occured'
+                                    });
+                                })
+                            }
+                        })
+                        .catch(err => {
+                            res.status(500).send({
+                                message: err.message || 'delete operation is not occured'
+                            });
+                        })
+                    }
+                }
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'delete operation is not occured'
                 });
-            } else {
-                res.send({ success: true, message: "Customer Deleted Successfully" });
-            }
-        })
-        .catch(err => {
+            })
+        } else {
             res.status(500).send({
-                message: err.message || 'delete operation is not occured'
-            });
-        })
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'delete operation is not occured'
+        });
+    })
+    
 }
 
 // Day Collections of Customer
@@ -171,7 +287,7 @@ exports.dayBills = (req, res) => {
 }
 
 // Balance Statement
-exports.customerBalanceStatement = (req, res) => {
+exports.customerStatement = (req, res) => {
     const userid = req.body.userId;
     const sessionId = req.body.sessionId;
     const userreq = {
@@ -181,15 +297,11 @@ exports.customerBalanceStatement = (req, res) => {
 
     userModel.findOne(userreq).then(user => {
         if (user) {
-            customerModel.find({}).then(customers => {
+            customerModel.find({ '_id': req.body.customer_id }).then(customers => {
                 const cust = customers;
+                console.log('\n cust: ', cust);
                 if (cust) {
-                    var table_data = "<table><thead><tr><th>Name</th><th>Balance Amount</th><th>Paid Amount</th></tr></thead><tbody>";
-                    cust.forEach(c => {
-                        table_data += "<tr><td>" + c.name + "</td><td>" + c.balance_amount + "</td><td>" + c.collected_amount + "</td></tr>";
-                    });
-                    table_data += "</tbody></table>";
-                    res.send({ table: table_data });
+                    res.send(cust);
                 }
             })
                 .catch(err => {
