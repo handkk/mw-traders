@@ -5,6 +5,7 @@ var billModel = require('../models/bill.model');
 var farmerModel = require('../models/farmer.model');
 var customerModel = require('../models/customer.model');
 const moment = require('moment');
+const lodash = require('lodash');
 
 // Get Bills
 exports.getBills = (req, res) => {
@@ -213,11 +214,11 @@ exports.deleteBill = (req, res) => {
                                     billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
                                         res.send({ success: true, message: "Bill Deleted Successfully" });
                                     })
-                                    .catch(err => {
-                                        res.status(500).send({
-                                            message: err.message || 'bill not removed'
-                                        });
-                                    })
+                                        .catch(err => {
+                                            res.status(500).send({
+                                                message: err.message || 'bill not removed'
+                                            });
+                                        })
                                 })
                                 .catch(err => {
                                     res.status(500).send({
@@ -249,7 +250,67 @@ exports.deleteBill = (req, res) => {
             });
         });
 }
+function onFindIndexByBIllId(customerData, billId, req, isDeleteRecord, updatedBillData) {
+    let obj = {}
+   if(updatedBillData){
+    obj['bill_date'] = updatedBillData['bill_date']
+    obj['billId'] = billId
+    obj['customer_name'] = updatedBillData['customer_name']
+    obj['customer_id'] = updatedBillData['customer_id']
+    obj['customer_balance_amount'] = updatedBillData['customer_balance_amount']
+    obj['vegetable_name'] = updatedBillData['vegetable_name']
+    obj['vegetable_id'] = updatedBillData['vegetable_id']
+    obj['rate'] = updatedBillData['rate']
+    obj['quantity'] = updatedBillData['quantity']
+    obj['farmer_name'] = updatedBillData['farmer_name']
+    obj['farmer_id'] = updatedBillData['farmer_id']
+    obj['unit_wise'] = updatedBillData['unit_wise']
+    obj['notes'] = updatedBillData['notes']
+    obj['customer_balance_amount'] = updatedBillData['customer_balance_amount']
+    obj['total_amount'] = updatedBillData['total_amount']
+    obj['modified_at'] = updatedBillData['modified_at']
+    obj['userId'] = req.body['userId']
+    obj['created_at'] =updatedBillData['created_at']
+   }
+    let editedData = lodash.cloneDeep(customerData)
+    if (editedData.customerCollection && editedData.customerCollection.length > 0) {
+        const existingCollection = editedData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
+        if (existingCollection) {
+            let recordedIndex = existingCollection.records.findIndex((item) => item.billId == billId)
+          
+            if (recordedIndex != -1) {
+                if (isDeleteRecord) {
+                    existingCollection.records.splice(recordedIndex)
+                } else {
+                    existingCollection.records[recordedIndex] = obj
 
+
+                }
+            } else {
+               
+
+                existingCollection.records.push(obj)
+
+            }
+        } else {
+
+
+        }
+    }
+    else {
+        // customer changed ( changed customer doen'nt have any collection up to now)
+        let tmpList=[]
+        tmpList.push(obj)
+        editedData.customerCollection.push({
+            bill_date: req.body['bill_date'],
+            customer_name: req.body.customer_name,
+            customer_id: req.body.customer_id,
+            records:tmpList,
+        });
+    }
+
+    return editedData;
+}
 // Update Bill
 exports.updateBill = (req, res) => {
     if (!req.body) {
@@ -302,39 +363,118 @@ exports.updateBill = (req, res) => {
                                             } else {
                                                 customerModel.findOne({ '_id': billdata.customer_id }).then(customer_data => {
                                                     if (customer_data) {
+
                                                         // 
                                                         // let balance_amount = 2300;
                                                         // let last_amount_updated = 400;
                                                         // let total_amount = 40;
                                                         // let new_amount = 0;
-                                                        let amount;
-                                                        if (customer_data.last_amount_updated > billReqBody.total_amount) {
-                                                            const tmp_amount1 = customer_data.last_amount_updated - billReqBody.total_amount;
-                                                            amount = customer_data.balance_amount - tmp_amount1;
-                                                        }
-                                                        if (customer_data.last_amount_updated < billReqBody.total_amount) {
-                                                            const tmp_amount2 = billReqBody.total_amount - customer_data.last_amount_updated;
-                                                            amount = customer_data.balance_amount + tmp_amount2;
-                                                        }
-                                                        if (customer_data.last_amount_updated === billReqBody.total_amount) {
-                                                            amount = customer_data.balance_amount;
-                                                        }
-                                                        // const amount = customer_data.balance_amount + (req.body.total_amount - customer_data.last_amount_updated);
-                                                        const balance_amount = { 'balance_amount': amount };
-                                                        customerModel.updateOne({ '_id': billdata.customer_id }, balance_amount).then(updateddata => {
-                                                            if (updateddata) {
-                                                                res.send(updatedBillData);
-                                                            } else {
-                                                                res.status(403).send({
-                                                                    message: 'Customer not found'
-                                                                });
-                                                            }
-                                                        })
-                                                            .catch(err => {
-                                                                res.status(500).send({
-                                                                    message: err.message || 'Save operation is not occured'
-                                                                });
+                                                        if (req.body['isCustEdited'] == true) {
+                                                            customerModel.findOne({ '_id': req.body['oldCustId'] }).then(oldCustData => {
+                                                                oldCustData['balance_amount'] = oldCustData['balance_amount'] - billReqBody.total_amount;
+                                                                let preCustDetails = onFindIndexByBIllId(oldCustData, id, req, true)
+                                                                console.log('preCustDetails', preCustDetails)
+
+                                                                customerModel.findOneAndUpdate({ '_id': req.body['oldCustId'] }, preCustDetails).then(preCustupdateddata => {
+                                                                    if (preCustupdateddata) {
+                                                                        // res.send(preCustupdateddata);
+                                                                        customerModel.findOne({ '_id': req.body['customer_id'] }).then(newCustData => {
+                                                                            newCustData['balance_amount'] = newCustData['balance_amount'] + billReqBody.total_amount;
+                                                                            let currentCustDetails = onFindIndexByBIllId(newCustData, id, req, false, updatedBillData)
+                                                                            console.log('currentCustDetails', currentCustDetails)
+            
+                                                                            customerModel.findOneAndUpdate({ '_id': req.body['customer_id'] }, currentCustDetails).then(currentCustDetails => {
+                                                                                if (currentCustDetails) {
+                                                                                    res.send(currentCustDetails);
+                                                                                } else {
+                                                                                    res.status(403).send({
+                                                                                        message: 'Customer not found'
+                                                                                    });
+                                                                                }
+                                                                            })
+            
+            
+                                                                        })
+                                                                    } else {
+                                                                        res.status(403).send({
+                                                                            message: 'Customer not found'
+                                                                        });
+                                                                    }
+                                                                })
+
+
                                                             })
+                                              
+
+                                                        }
+                                                        if (req.body['isCustEdited'] == false) {
+
+                                                            // cust not edited
+                                                            let amount;
+                                                            if (customer_data.last_amount_updated > billReqBody.total_amount) {
+                                                                const tmp_amount1 = customer_data.last_amount_updated - billReqBody.total_amount;
+                                                                amount = customer_data.balance_amount - tmp_amount1;
+                                                            }
+                                                            if (customer_data.last_amount_updated < billReqBody.total_amount) {
+                                                                const tmp_amount2 = billReqBody.total_amount - customer_data.last_amount_updated;
+                                                                amount = customer_data.balance_amount + tmp_amount2;
+                                                            }
+                                                            if (customer_data.last_amount_updated === billReqBody.total_amount) {
+                                                                amount = customer_data.balance_amount;
+                                                            }
+                                                            // if (customerData.customerCollection && customerData.customerCollection.length > 0) {
+                                                            //     const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
+                                                            //     if (existingCollection) {
+                                                            //         let recordedIndex = existingCollection.records.findIndex((item) => item.billId == id)
+                                                            //         console.log('recordedIndex', recordedIndex)
+                                                            //         if (recordedIndex != -1) {
+
+
+
+
+                                                            //         } else {
+
+                                                            //             existingCollection.records.push(updatedBillData)
+                                                            //         }
+                                                            //     } else {
+
+
+                                                            //     }
+
+
+
+
+                                                            // } else {
+                                                            //     // customer changed ( changed customer doen'nt have any collection up to now)
+                                                            //     customerData.customerCollection.push({
+                                                            //         bill_date: req.body['bill_date'],
+                                                            //         customer_name: req.body.customer_name,
+                                                            //         customer_id: req.body.customer_id,
+                                                            //         records: [{ ...req.body, billId: id }],
+                                                            //     });
+                                                            // }
+                                                            let editedObj = onFindIndexByBIllId(customerData, id, req, false, updatedBillData)
+                                                            editedObj['balance_amount'] = amount
+                                                            // console.log('editedObj', editedObj.customerCollection[0].records)
+                                                            customerModel.findOneAndUpdate({ '_id': billdata.customer_id }, editedObj).then(updateddata => {
+                                                                if (updateddata) {
+                                                                    res.send(editedObj);
+                                                                } else {
+                                                                    res.status(403).send({
+                                                                        message: 'Customer not found'
+                                                                    });
+                                                                }
+                                                            })
+                                                                .catch(err => {
+                                                                    res.status(500).send({
+                                                                        message: err.message || 'Save operation is not occured'
+                                                                    });
+                                                                })
+                                                        }
+
+
+                                                        // const amount = customer_data.balance_amount + (req.body.total_amount - customer_data.last_amount_updated);
+
                                                     } else {
                                                         res.status(403).send({
                                                             message: 'Customer not found'
