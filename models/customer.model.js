@@ -30,10 +30,6 @@ var customer = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    bills: {
-        type: Array,
-        default: []
-    },
     created_at: {
         type: Date
     },

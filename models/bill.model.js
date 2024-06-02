@@ -10,10 +10,6 @@ var bill = new mongoose.Schema({
         type: String,
         required: true
     },
-    customer_balance_amount: {
-        type: Number,
-        default: 0
-    },
     quantity: {
         type: Number,
         required: true

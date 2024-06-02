@@ -96,7 +96,6 @@ exports.createBill = (req, res) => {
                                                 req.body['total_amount'] = req.body.rate * req.body.quantity;
                                             }
                                             let customer_balance_amount = customerData['balance_amount'] + req.body['total_amount'];
-                                            req.body['customer_balance_amount'] = customer_balance_amount;
                                             req.body['created_at'] = new Date();
                                             req.body['modified_at'] = new Date();
                                             const date = req.body['bill_date'];
@@ -106,7 +105,6 @@ exports.createBill = (req, res) => {
                                                 .then(newbilldata => {
                                                     const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
                                                     customerData['balance_amount'] = customer_balance_amount;
-
                                                     if (existingCollection) {
                                                         existingCollection.records.push({ ...req.body, billId: newbilldata['_id'] });
                                                     } else {
@@ -250,6 +248,19 @@ exports.deleteBill = (req, res) => {
             });
         });
 }
+
+function onReturnRecords(customerData) {
+    let customerTotalAmount = 0;
+    let collection;
+    collection = customerData;
+    collection.customerCollection.forEach(col => {
+        col.records.reduce((count, item) => {
+            customerTotalAmount = count + item.total_amount;
+        }, 0);
+    });
+    return customerTotalAmount;
+}
+
 function onFindIndexByBIllId(customerData, billId, req, isDeleteRecord, updatedBillData) {
     let obj = {}
    if(updatedBillData){
@@ -257,7 +268,6 @@ function onFindIndexByBIllId(customerData, billId, req, isDeleteRecord, updatedB
     obj['billId'] = billId
     obj['customer_name'] = updatedBillData['customer_name']
     obj['customer_id'] = updatedBillData['customer_id']
-    obj['customer_balance_amount'] = updatedBillData['customer_balance_amount']
     obj['vegetable_name'] = updatedBillData['vegetable_name']
     obj['vegetable_id'] = updatedBillData['vegetable_id']
     obj['rate'] = updatedBillData['rate']
@@ -266,7 +276,6 @@ function onFindIndexByBIllId(customerData, billId, req, isDeleteRecord, updatedB
     obj['farmer_id'] = updatedBillData['farmer_id']
     obj['unit_wise'] = updatedBillData['unit_wise']
     obj['notes'] = updatedBillData['notes']
-    obj['customer_balance_amount'] = updatedBillData['customer_balance_amount']
     obj['total_amount'] = updatedBillData['total_amount']
     obj['modified_at'] = updatedBillData['modified_at']
     obj['userId'] = req.body['userId']
@@ -325,6 +334,7 @@ exports.updateBill = (req, res) => {
     }
     delete req.body['userId'];
     delete req.body['sessionId'];
+    let balanceAmount = 0;
     userModel.findOne(userreq).then(user => {
         if (user) {
             vegetableModel.findOne({
@@ -373,7 +383,6 @@ exports.updateBill = (req, res) => {
                                                             customerModel.findOne({ '_id': req.body['oldCustId'] }).then(oldCustData => {
                                                                 oldCustData['balance_amount'] = oldCustData['balance_amount'] - billReqBody.total_amount;
                                                                 let preCustDetails = onFindIndexByBIllId(oldCustData, id, req, true)
-                                                                console.log('preCustDetails', preCustDetails)
 
                                                                 customerModel.findOneAndUpdate({ '_id': req.body['oldCustId'] }, preCustDetails).then(preCustupdateddata => {
                                                                     if (preCustupdateddata) {
@@ -381,8 +390,7 @@ exports.updateBill = (req, res) => {
                                                                         customerModel.findOne({ '_id': req.body['customer_id'] }).then(newCustData => {
                                                                             newCustData['balance_amount'] = newCustData['balance_amount'] + billReqBody.total_amount;
                                                                             let currentCustDetails = onFindIndexByBIllId(newCustData, id, req, false, updatedBillData)
-                                                                            console.log('currentCustDetails', currentCustDetails)
-            
+
                                                                             customerModel.findOneAndUpdate({ '_id': req.body['customer_id'] }, currentCustDetails).then(currentCustDetails => {
                                                                                 if (currentCustDetails) {
                                                                                     res.send(currentCustDetails);
@@ -410,18 +418,18 @@ exports.updateBill = (req, res) => {
                                                         if (req.body['isCustEdited'] == false) {
 
                                                             // cust not edited
-                                                            let amount;
-                                                            if (customer_data.last_amount_updated > billReqBody.total_amount) {
-                                                                const tmp_amount1 = customer_data.last_amount_updated - billReqBody.total_amount;
-                                                                amount = customer_data.balance_amount - tmp_amount1;
-                                                            }
-                                                            if (customer_data.last_amount_updated < billReqBody.total_amount) {
-                                                                const tmp_amount2 = billReqBody.total_amount - customer_data.last_amount_updated;
-                                                                amount = customer_data.balance_amount + tmp_amount2;
-                                                            }
-                                                            if (customer_data.last_amount_updated === billReqBody.total_amount) {
-                                                                amount = customer_data.balance_amount;
-                                                            }
+                                                            // let amount;
+                                                            // if (customer_data.last_amount_updated > billReqBody.total_amount) {
+                                                            //     const tmp_amount1 = customer_data.last_amount_updated - billReqBody.total_amount;
+                                                            //     amount = customer_data.balance_amount - tmp_amount1;
+                                                            // }
+                                                            // if (customer_data.last_amount_updated < billReqBody.total_amount) {
+                                                            //     const tmp_amount2 = billReqBody.total_amount - customer_data.last_amount_updated;
+                                                            //     amount = customer_data.balance_amount + tmp_amount2;
+                                                            // }
+                                                            // if (customer_data.last_amount_updated === billReqBody.total_amount) {
+                                                            //     amount = customer_data.balance_amount;
+                                                            // }
                                                             // if (customerData.customerCollection && customerData.customerCollection.length > 0) {
                                                             //     const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
                                                             //     if (existingCollection) {
@@ -454,11 +462,32 @@ exports.updateBill = (req, res) => {
                                                             //     });
                                                             // }
                                                             let editedObj = onFindIndexByBIllId(customerData, id, req, false, updatedBillData)
-                                                            editedObj['balance_amount'] = amount
-                                                            // console.log('editedObj', editedObj.customerCollection[0].records)
-                                                            customerModel.findOneAndUpdate({ '_id': billdata.customer_id }, editedObj).then(updateddata => {
+                                                            customerModel.findOneAndUpdate({ '_id': billdata.customer_id }, editedObj, { returnDocument: "after" }).then(updateddata => {
                                                                 if (updateddata) {
-                                                                    res.send(editedObj);
+                                                                    const existingCollection = updateddata.customerCollection;
+                                                                    if (existingCollection && existingCollection.length > 0) {
+                                                                        existingCollection.forEach(col => {
+                                                                            col.records.forEach(re => {
+                                                                                balanceAmount = balanceAmount + re.total_amount;
+                                                                            });
+                                                                        });
+                                                                    }
+                                                                    const amount = { 'balance_amount': balanceAmount };
+                                                                    // update customer balance amount
+                                                                    customerModel.findOneAndUpdate({ '_id': billdata.customer_id }, amount).then(amount_updated => {
+                                                                        if (amount_updated) {
+                                                                            res.send(editedObj);
+                                                                        } else {
+                                                                            res.status(403).send({
+                                                                                message: 'Customer not found'
+                                                                            });
+                                                                        }
+                                                                    })
+                                                                    .catch(err => {
+                                                                        res.status(500).send({
+                                                                            message: err.message || 'Save operation is not occured'
+                                                                        });
+                                                                    })
                                                                 } else {
                                                                     res.status(403).send({
                                                                         message: 'Customer not found'
