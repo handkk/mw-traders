@@ -6,6 +6,12 @@ const { v4: uuidv4 } = require('uuid');
 exports.getUsers = (req, res) => {
     const limit = req.body.limit ? req.body.limit : 1000;
     const skip = req.body.skip ? (req.body.skip - 1) : 0;
+    const user_id = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': user_id,
+        'sessionId': sessionId
+    }
     userModel.count().then(count => {
         var query = userModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
         query.exec().then(usersData => {
@@ -38,30 +44,49 @@ exports.createUser = (req, res) => {
         res.status(400).send({message: 'username is required'});
         return;
     }
-    userModel.find({'username': req.body.username}).then(foundUsers => {
-        if (foundUsers && foundUsers.length >= 1) {
-            res.status(500).send({
-                message: 'username is already exists'
+    const userreq = {
+        'userId': req.body.userId,
+        'sessionId': req.body.sessionId
+    }
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            userModel.find({'username': req.body.username}).then(foundUsers => {
+                if (foundUsers && foundUsers.length >= 1) {
+                    res.status(500).send({
+                        message: 'username is already exists'
+                    });
+                } else {
+                    const uuid = uuidv4();
+                    req.body['userId'] = uuid;
+                    const user = new userModel(req.body);
+                    user.save(user)
+                    .then(data => {
+                        res.send(data);
+                    })
+                    .catch(err => {
+                        res.status(500).send({
+                            message: err.message || 'Save operation is not occured'
+                        });
+                    })
+                }
+            }).catch(err => {
+                res.status(500).send({
+                    message: err.message || 'user not found'
+                });
             });
         } else {
-            const uuid = uuidv4();
-            req.body['userId'] = uuid;
-            const user = new userModel(req.body);
-            user.save(user)
-            .then(data => {
-                res.send(data);
-            })
-            .catch(err => {
-                res.status(500).send({
-                    message: err.message || 'Save operation is not occured'
-                });
+            res.status(500).send({
+                success: false,
+                code: 1000,
+                message: 'User session ended, Please login again'
             })
         }
-    }).catch(err => {
+    })
+    .catch(err => {
         res.status(500).send({
-            message: err.message || 'user not found'
-        });
-    });
+            message: err.message || 'Not able to fetch the collections'
+        })
+    })
 }
 
 // Update User Info
@@ -70,20 +95,40 @@ exports.updateUser = (req, res) => {
         return res.status(400).send({message: 'Data to update can not be empty'});
     }
     const userid = req.params.id;
-
-    userModel.findOneAndUpdate({'_id': userid}, req.body, { returnDocument: "after" })
-    .then(updatedUserData => {
-        if (!updatedUserData) {
-            res.status(404).send({
-                message: `Cannot update user with id ${userid}`
-            });
+    const user_id = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': user_id,
+        'sessionId': sessionId
+    }
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            userModel.findOneAndUpdate({'_id': userid}, req.body, { returnDocument: "after" })
+            .then(updatedUserData => {
+                if (!updatedUserData) {
+                    res.status(404).send({
+                        message: `Cannot update user with id ${userid}`
+                    });
+                } else {
+                    res.send(updatedUserData);
+                }
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Update operation is not occured'
+                });
+            })
         } else {
-            res.send(updatedUserData);
+            res.status(500).send({
+                success: false,
+                code: 1000,
+                message: 'User session ended, Please login again'
+            })
         }
     })
     .catch(err => {
         res.status(500).send({
-            message: err.message || 'Update operation is not occured'
+            message: err.message || 'delete operation is not occured'
         });
     })
 }
@@ -122,6 +167,8 @@ exports.deleteUser = (req, res) => {
             })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -139,20 +186,40 @@ exports.getUserInfo = (req, res) => {
         return res.status(400).send({message: 'User id is required'});
     }
     const userid = req.params.id;
-
-    userModel.findOne({'_id': userid})
-    .then(data => {
-        if (!data) {
-            res.status(404).send({
-                message: `User not found with id: ${userid}`
-            });
+    const user_id = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': user_id,
+        'sessionId': sessionId
+    }
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            userModel.findOne({'_id': userid})
+            .then(data => {
+                if (!data) {
+                    res.status(404).send({
+                        message: `User not found with id: ${userid}`
+                    });
+                } else {
+                    res.send(data);
+                }
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'not able to get user info'
+                });
+            })
         } else {
-            res.send(data);
+            res.status(500).send({
+                success: false,
+                code: 1000,
+                message: 'User session ended, Please login again'
+            })
         }
     })
     .catch(err => {
         res.status(500).send({
-            message: err.message || 'not able to get user info'
+            message: err.message || 'delete operation is not occured'
         });
     })
 }

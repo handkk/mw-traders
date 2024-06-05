@@ -33,6 +33,8 @@ exports.getCollections = (req, res) => {
             })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -116,6 +118,8 @@ exports.createCollection = (req, res) => {
             })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -140,15 +144,52 @@ exports.deleteCollection = (req, res) => {
     const id = req.params.id;
     userModel.findOne(userreq).then(user => {
         if (user) {
-            collectionModel.findOneAndRemove({'_id': id})
-            .then(data => {
-                if (!data) {
-                    res.status(404).send({
-                        message: `Cannot delete user with id ${id}`
+            collectionModel.findOne({'_id': id}).then(collection_data => {
+                let collectionData = collection_data;
+
+                customerModel.findOne({'_id': collectionData.customer_id}).then(customer_data => {
+                    let customerData = customer_data;
+                    const balance_amount = customerData.balance_amount + collectionData.amount;
+                    const update_amount = { 
+                        'balance_amount': balance_amount,
+                        'last_amount_updated': collectionData.amount,
+                        'modified_at': new Date(),
+                        'collected_amount': customerData.collected_amount - collectionData.amount
+                    };
+                    customerModel.updateOne({ '_id': collectionData.customer_id }, update_amount).then(updateddata => {
+                        if (updateddata) {
+                            collectionModel.findOneAndRemove({'_id': id})
+                            .then(data => {
+                                if (!data) {
+                                    res.status(404).send({
+                                        message: `Cannot delete user with id ${id}`
+                                    });
+                                } else {
+                                    res.send({ success: true, message: "Collection Deleted Successfully" });
+                                }
+                            })
+                            .catch(err => {
+                                res.status(500).send({
+                                    message: err.message || 'delete operation is not occured'
+                                });
+                            })
+                        } else {
+                            res.status(403).send({
+                                message: 'Customer not found'
+                            });
+                        }
+                    })
+                        .catch(err => {
+                            res.status(500).send({
+                                message: err.message || 'Save operation is not occured'
+                            });
+                        })
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'delete operation is not occured'
                     });
-                } else {
-                    res.send({ success: true, message: "Collection Deleted Successfully" });
-                }
+                })
             })
             .catch(err => {
                 res.status(500).send({
@@ -157,6 +198,8 @@ exports.deleteCollection = (req, res) => {
             })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -190,6 +233,8 @@ exports.getCollectionsByCustomer = (req, res) => {
             })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -202,10 +247,8 @@ exports.getCollectionsByCustomer = (req, res) => {
 }
 
 exports.getRecentCollections = (customer_id) => {
-    // console.log('customer_id: ', customer_id);
     var query = collectionModel.find({ 'customer_id': customer_id }).sort({'created_at': -1}).skip(0 * 2).limit(2);
     query.exec().then(collectionsData => {
-        // console.log('collectionsData: ', collectionsData);
         return collectionsData;
     })
     .catch(err => {

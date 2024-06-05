@@ -9,6 +9,12 @@ const lodash = require('lodash');
 
 // Get Bills
 exports.getBills = (req, res) => {
+    if (!req.body) {
+        return res.status(400).send({ message: 'Data to update can not be empty' });
+    }
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
+    }
     const userreq = {
         'userId': req.body.userId,
         'sessionId': req.body.sessionId
@@ -43,6 +49,8 @@ exports.getBills = (req, res) => {
                 })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -57,8 +65,10 @@ exports.getBills = (req, res) => {
 // Create New Bill
 exports.createBill = (req, res) => {
     if (!req.body) {
-        res.status(400).send({ message: 'payload is required' });
-        return;
+        return res.status(400).send({ message: 'Data to update can not be empty' });
+    }
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
     }
     const name = req.body.name;
     const userreq = {
@@ -161,6 +171,8 @@ exports.createBill = (req, res) => {
                 })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -175,6 +187,12 @@ exports.createBill = (req, res) => {
 exports.deleteBill = (req, res) => {
     if (!req.params.id) {
         return res.status(400).send({ message: 'Bill id param is required' });
+    }
+    if (!req.body) {
+        return res.status(400).send({ message: 'Data to update can not be empty' });
+    }
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
     }
     const userid = req.body.userId;
     const sessionId = req.body.sessionId;
@@ -238,6 +256,8 @@ exports.deleteBill = (req, res) => {
                 })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -324,6 +344,9 @@ function onFindIndexByBIllId(customerData, billId, req, isDeleteRecord, updatedB
 exports.updateBill = (req, res) => {
     if (!req.body) {
         return res.status(400).send({ message: 'Data to update can not be empty' });
+    }
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
     }
     const id = req.params.id;
     const userid = req.body.userId;
@@ -551,6 +574,8 @@ exports.updateBill = (req, res) => {
                 })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }

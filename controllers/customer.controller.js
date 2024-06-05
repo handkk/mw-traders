@@ -11,7 +11,7 @@ var collectionsController = require('../controllers/collections.controller');
 var maxcount=3
 // Get Customers
 exports.getCustomers = (req, res) => {
-    const limit = req.body.limit ? req.body.limit : 1000;
+    const limit = req.body.limit ? req.body.limit : 10000;
     const skip = req.body.skip ? (req.body.skip - 1) : 0;
     customerModel.count().then(count => {
         var query = customerModel.find({}).sort({ 'modified_at': -1 }).skip(skip * limit).limit(limit);
@@ -52,19 +52,40 @@ exports.createCustomer = (req, res) => {
         res.status(400).send({ message: 'payload is required' });
         return;
     }
-
-    req.body['created_at'] = new Date();
-    req.body['modified_at'] = new Date();
-    const customer = new customerModel(req.body);
-    customer.save(customer)
-        .then(data => {
-            res.send(data);
-        })
-        .catch(err => {
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
+    }
+    const userreq = {
+        'userId': req.body.userId,
+        'sessionId': req.body.sessionId
+    }
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            req.body['created_at'] = new Date();
+            req.body['modified_at'] = new Date();
+            const customer = new customerModel(req.body);
+            customer.save(customer)
+                .then(data => {
+                    res.send(data);
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Save operation is not occured'
+                    });
+                })
+        } else {
             res.status(500).send({
-                message: err.message || 'Save operation is not occured'
-            });
-        })
+                success: false,
+                code: 1000,
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'Please login'
+        });
+    })
 }
 
 // Update Customer Info
@@ -72,30 +93,57 @@ exports.updateCustomer = (req, res) => {
     if (!req.body) {
         return res.status(400).send({ message: 'Data to update can not be empty' });
     }
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
+    }
+    const userreq = {
+        'userId': req.body.userId,
+        'sessionId': req.body.sessionId
+    }
     const customerid = req.params.id;
     req.body['modified_at'] = new Date();
-
-    customerModel.findOneAndUpdate({ '_id': customerid }, req.body, { returnDocument: "after" })
-        .then(updatedCustomerData => {
-            if (!updatedCustomerData) {
-                res.status(404).send({
-                    message: `Cannot update customer with id ${customerid}`
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            customerModel.findOneAndUpdate({ '_id': customerid }, req.body, { returnDocument: "after" })
+            .then(updatedCustomerData => {
+                if (!updatedCustomerData) {
+                    res.status(404).send({
+                        message: `Cannot update customer with id ${customerid}`
+                    });
+                } else {
+                    res.send(updatedCustomerData);
+                }
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Update operation is not occured'
                 });
-            } else {
-                res.send(updatedCustomerData);
-            }
-        })
-        .catch(err => {
+            })
+        } else {
             res.status(500).send({
-                message: err.message || 'Update operation is not occured'
-            });
-        })
+                success: false,
+                code: 1000,
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'Please login'
+        });
+    })
 }
 
 // Delete Customer
 exports.deleteCustomer = (req, res) => {
     if (!req.params.id) {
         return res.status(400).send({ message: 'Customer id param is required' });
+    }
+    if (!req.body) {
+        return res.status(400).send({ message: 'Data to update can not be empty' });
+    }
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
     }
     const userid = req.body.userId;
     const sessionId = req.body.sessionId;
@@ -220,6 +268,8 @@ exports.deleteCustomer = (req, res) => {
             })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -275,6 +325,8 @@ exports.dayBills = (req, res) => {
                 });
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -311,6 +363,8 @@ exports.customerStatement = (req, res) => {
                 })
         } else {
             res.status(500).send({
+                success: false,
+                code: 1000,
                 message: 'User session ended, Please login again'
             })
         }
@@ -475,6 +529,8 @@ exports.customerBills = (req, res) => {
                 // })
             } else {
                 res.status(500).send({
+                    success: false,
+                    code: 1000,
                     message: 'User session ended, Please login again'
                 })
             }
