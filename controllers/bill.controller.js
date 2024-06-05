@@ -123,6 +123,7 @@ exports.createBill = (req, res) => {
                                                             bill_date: req.body['bill_date'],
                                                             customer_name: req.body.customer_name,
                                                             customer_id: req.body.customer_id,
+                                                            phone_number: customerData.phone_number,
                                                             records: [{ ...req.body, billId: newbilldata['_id'] }],
                                                         });
                                                     }
