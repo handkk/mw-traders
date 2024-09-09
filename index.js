@@ -3,10 +3,10 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const bodyparser = require('body-parser');
 const path = require('path');
-const router = require('../routes/traders.route');
+const router = require('./routes/traders.route');
 const cors = require('cors');
 
-const connectDB = require('../database/connection');
+const connectDB = require('./database/connection');
 const app = express();
 // const corsOptions ={
 //     origin:'http://localhost:4200',
