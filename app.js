@@ -46,6 +46,7 @@ app.use('/js', express.static(path.resolve(__dirname, 'assets/js')));
 
 // var traders = require('./routes/traders.route');
 app.use('/', router);
+app.use(express.static('traders'))
 // app.use('/traders', traders.apis);
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

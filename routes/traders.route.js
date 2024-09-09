@@ -8,6 +8,10 @@ const vegetableController = require('../controllers/vegetable.controller');
 const billController = require('../controllers/bill.controller');
 const collectionController = require('../controllers/collections.controller');
 
+// router.get('/', (req, res) => {
+//     res.send('Welcome Traders')
+// });
+
 // User apis
 router.get('/allusers', userController.getUsers);
 router.post('/create_user', userController.createUser);
