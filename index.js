@@ -39,13 +39,13 @@ app.use('/css', express.static(path.resolve(__dirname, 'assets/css')));
 app.use('/img', express.static(path.resolve(__dirname, 'assets/img')));
 app.use('/js', express.static(path.resolve(__dirname, 'assets/js')));
 
-// app.get('/', (req, res) => {
-//     res.render('index')
-// })
+app.get('/test', (req, res) => {
+    res.render('welcome')
+})
 
 // var traders = require('./routes/traders.route');
 app.use('/', router);
-app.use(express.static('traders'))
+app.use(express.static(__dirname + '/traders'))
 // app.use('/traders', traders.apis);
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
