@@ -7,6 +7,7 @@ const customerController = require('../controllers/customer.controller');
 const vegetableController = require('../controllers/vegetable.controller');
 const billController = require('../controllers/bill.controller');
 const collectionController = require('../controllers/collections.controller');
+const billPrintController = require('../controllers/bill-print.controller');
 
 // router.get('/', (req, res) => {
 //     res.send('Welcome Traders')
@@ -47,7 +48,7 @@ router.post('/new-bill', billController.createBill);
 router.delete('/bill/:id', billController.deleteBill);
 router.put('/update-bill/:id', billController.updateBill);
 router.post('/day_bills', customerController.dayBills);
-router.post('/customer_bills', customerController.customerBills);
+router.post('/customer_bills', billPrintController.getBillPrints);
 
 // Collection apis
 router.post('/new-collection', collectionController.createCollection);

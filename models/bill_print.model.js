@@ -13,31 +13,11 @@ var bill_print = new mongoose.Schema({
         type: Number,
         default: null
     },
-    address: {
-        type: String,
-        default: ''
-    },
-    notes: {
-        type: String,
-        default: ''
-    },
-    last_amount_updated: {
-        type: Number,
-        default: 0
-    },
-    balance_amount: {
-        type: Number,
-        default: 0
-    },
-    collected_amount: {
-        type: Number,
-        default: 0
-    },
-    bills: {
+    items: {
         type: Array,
         default: []
     },
-    cusomer_id: {
+    customer_id: {
         type: String,
         default: '',
         required: true
@@ -47,6 +27,10 @@ var bill_print = new mongoose.Schema({
     },
     modified_at: {
         type: Date
+    },
+    created_by: {
+        type: String,
+        required: true
     }
 });
 

@@ -6,6 +6,7 @@ var farmerModel = require('../models/farmer.model');
 var customerModel = require('../models/customer.model');
 const moment = require('moment');
 const lodash = require('lodash');
+var billPrintModel = require('../models/bill_print.model');
 
 // Get Bills
 exports.getBills = (req, res) => {
@@ -71,6 +72,7 @@ exports.createBill = (req, res) => {
         return res.status(400).send({message: 'userid & sessionid is required'});
     }
     const name = req.body.name;
+    console.log('\n createBill req.body: ', req.body);
     const userreq = {
         'userId': req.body.userId,
         'sessionId': req.body.sessionId
@@ -91,14 +93,14 @@ exports.createBill = (req, res) => {
                                 })
                                     .then(customerData => {
                                         if (customerData) {
-                                            let billdata = {
-                                                'customer_name': req.body.customer_name,
-                                                'customer_id': req.body.customer_id,
-                                                'farmer_name': req.body.farmer_name,
-                                                'farmer_id': req.body.farmer_id,
-                                                'vegetable_id': req.body.vegetable_id,
-                                                'vegetable_name': req.body.vegetable_name
-                                            };
+                                            // let billdata = {
+                                            //     'customer_name': req.body.customer_name,
+                                            //     'customer_id': req.body.customer_id,
+                                            //     'farmer_name': req.body.farmer_name,
+                                            //     'farmer_id': req.body.farmer_id,
+                                            //     'vegetable_id': req.body.vegetable_id,
+                                            //     'vegetable_name': req.body.vegetable_name
+                                            // };
 
                                             if (!req.body.unit_wise) {
                                                 req.body['total_amount'] = (req.body.rate / 10) * req.body.quantity;
@@ -113,23 +115,72 @@ exports.createBill = (req, res) => {
                                             const bill = new billModel(req.body);
                                             bill.save(bill)
                                                 .then(newbilldata => {
-                                                    const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
+                                                    // const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
                                                     customerData['balance_amount'] = customer_balance_amount;
-                                                    if (existingCollection) {
-                                                        existingCollection.records.push({ ...req.body, billId: newbilldata['_id'] });
-                                                    } else {
+                                                    // if (existingCollection) {
+                                                    //     existingCollection.records.push({ ...req.body, billId: newbilldata['_id'] });
+                                                    // } else {
                                                         // Create a new collection with the provided bill date
-                                                        customerData.customerCollection.push({
-                                                            bill_date: req.body['bill_date'],
-                                                            customer_name: req.body.customer_name,
-                                                            customer_id: req.body.customer_id,
-                                                            phone_number: customerData.phone_number,
-                                                            records: [{ ...req.body, billId: newbilldata['_id'] }],
-                                                        });
-                                                    }
+                                                        // customerData.customerCollection.push({
+                                                        //     bill_date: req.body['bill_date'],
+                                                        //     customer_name: req.body.customer_name,
+                                                        //     customer_id: req.body.customer_id,
+                                                        //     phone_number: customerData.phone_number,
+                                                        //     records: [{ ...req.body, billId: newbilldata['_id'] }],
+                                                        // });
+                                                    // }
+                                                    
+
+                                                    console.log('\n createBill customerData: ', customerData);
                                                     customerModel.findOneAndUpdate({ '_id': req.body.customer_id }, { ...customerData }, { returnDocument: "after" })
                                                         .then(cus => {
-                                                            res.send(newbilldata);
+                                                            console.log('\n createBill cus: ', cus);
+                                                            billPrintModel.findOne({ 'bill_date': req.body['bill_date'], 'customer_id': req.body.customer_id })
+                                                            .then(bill_print => {
+                                                                console.log('\n createBill bill_print: ', bill_print);
+                                                                if (!bill_print) {
+                                                                    console.log('\n createBill if bill_print: ', bill_print);
+                                                                    const billPrintBody = {
+                                                                        'bill_date': req.body['bill_date'],
+                                                                        'customer_id': req.body.customer_id,
+                                                                        'name': req.body.customer_name,
+                                                                        'phone_number': customerData.phone_number,
+                                                                        'items': [req.body],
+                                                                        'created_by': user.username,
+                                                                        'created_at': new Date(),
+                                                                        'modified_at': new Date()
+                                                                    }
+                                                                    console.log('\n createBill billPrintBody: ', billPrintBody);
+                                                                    const billPrint = new billPrintModel(billPrintBody);
+                                                                    billPrint.save(billPrint).then(billprint => {
+                                                                        res.send(newbilldata);
+                                                                    })
+                                                                    .catch(err => {
+                                                                        res.status(500).send({
+                                                                            message: err.message || 'Save operation is not occured'
+                                                                        });
+                                                                    })
+                                                                } else {
+                                                                    console.log('\n createBill else bill_print: ', bill_print);
+                                                                    bill_print['items'].push({...req.body})
+                                                                    bill_print['modified_at'] = new Date()
+                                                                    billPrintModel.findOneAndUpdate({ '_id': bill_print._id }, {...bill_print}, { returnDocument: "after" })
+                                                                    .then(bill_print_updated => {
+                                                                        console.log('\n createBill bill_print_updated: ', bill_print_updated);
+                                                                        res.send(newbilldata);
+                                                                    })
+                                                                    .catch(err => {
+                                                                        res.status(500).send({
+                                                                            message: err.message || 'Save operation is not occured'
+                                                                        });
+                                                                    })
+                                                                }
+                                                            })
+                                                            .catch(err => {
+                                                                res.status(500).send({
+                                                                    message: err.message || 'Save operation is not occured'
+                                                                });
+                                                            })
                                                         })
                                                         .catch(err => {
                                                             res.status(500).send({
