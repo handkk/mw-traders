@@ -7,10 +7,13 @@ var breakCount = 10;
 // Get Bill Prints
 exports.getBillPrints = (req, res) => {
     if (!req.body) {
-        return res.status(400).send({ message: 'Data to update can not be empty' });
+        return res.status(400).send({ message: 'Request payload can not be empty' });
     }
     if (req.body && (!req.body.userId && !req.body.sessionId)) {
         return res.status(400).send({message: 'userid & sessionid is required'});
+    }
+    if (req.body && (!req.body.bill_date)) {
+        return res.status(400).send({message: 'Bill Date is required'});
     }
     const userreq = {
         'userId': req.body.userId,
@@ -25,7 +28,8 @@ exports.getBillPrints = (req, res) => {
             var query = billPrintModel.find(dateQuery);
             query.exec().then(async billsData => {
                 // billsData.map(item => item.items = maxRecordsCount(billsData))
-                res.send(maxRecordsCount(billsData));
+                const processedBillsData = await maxRecordsCount(billsData);
+                res.send(processedBillsData);
             })
             .catch(err => {
                 res.status(500).send({
@@ -106,10 +110,19 @@ function maxRecordsCount(customerData) {
   // Balance Statement
 exports.customerStatement = (req, res) => {
     if (!req.body) {
-        return res.status(400).send({ message: 'Data to update can not be empty' });
+        return res.status(400).send({ message: 'Request body can not be empty' });
     }
     if (req.body && (!req.body.userId && !req.body.sessionId)) {
         return res.status(400).send({message: 'userid & sessionid is required'});
+    }
+    if (req.body && (!req.body.customer_id)) {
+        return res.status(400).send({message: 'Customer Id is required'});
+    }
+    if (req.body && (!req.body.from_date)) {
+        return res.status(400).send({message: 'Start Date is required'});
+    }
+    if (req.body && (!req.body.to_date)) {
+        return res.status(400).send({message: 'End Date is required'});
     }
     const userid = req.body.userId;
     const sessionId = req.body.sessionId;
@@ -141,6 +154,7 @@ exports.customerStatement = (req, res) => {
                             }
                             finalResult.push(collection);
                         })
+                        finalResult = finalResult.sort(function(a, b){return a.bill_date - b.bill_date});
                         res.send(finalResult);
                     } else {
                         res.send(finalResult);

@@ -70,6 +70,7 @@ exports.createCollection = (req, res) => {
             req.body['collected_name'] = user['name'];
             req.body['collected_user_name'] = user['username'];
             req.body['collected_user_id'] = user['userId'];
+            req.body['created_by'] = user.username;
             customerModel.findOne({'_id': collectiondata.customer_id}).then(customer_data => {
                 if (customer_data) {
                     if (customer_data.balance_amount > 0) {

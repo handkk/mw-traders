@@ -42,6 +42,10 @@ var collection = new mongoose.Schema({
     },
     modified_at: {
         type: Date
+    },
+    created_by: {
+        type: String,
+        required: true
     }
 });
 

@@ -55,6 +55,15 @@ var bill = new mongoose.Schema({
     },
     modified_at: {
         type: Date
+    },
+    created_by: {
+        type: String,
+        required: true
+    },
+    balance_amount: {
+        type: Number,
+        required: true,
+        default: 0
     }
 });
 

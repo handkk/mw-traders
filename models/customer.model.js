@@ -39,6 +39,10 @@ var customer = new mongoose.Schema({
     customerCollection: {
         type: Array,
         default: []
+    },
+    created_by: {
+        type: String,
+        required: true
     }
 });
 

@@ -63,6 +63,7 @@ exports.createCustomer = (req, res) => {
         if (user) {
             req.body['created_at'] = new Date();
             req.body['modified_at'] = new Date();
+            req.body['created_by'] = user.username;
             const customer = new customerModel(req.body);
             customer.save(customer)
                 .then(data => {

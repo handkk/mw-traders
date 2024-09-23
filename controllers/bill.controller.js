@@ -26,7 +26,7 @@ exports.getBills = (req, res) => {
             const skip = req.body.skip ? (req.body.skip - 1) : 0;
             let dateQuery = {};
             if (req.body.bill_date) {
-                dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
+                dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000+00:00';
             }
             billModel.count().then(count => {
                 var query = billModel.find(dateQuery).sort({ 'modified_at': -1 }).skip(skip * limit).limit(limit);
@@ -111,7 +111,9 @@ exports.createBill = (req, res) => {
                                             req.body['created_at'] = new Date();
                                             req.body['modified_at'] = new Date();
                                             const date = req.body['bill_date'];
-                                            req.body['bill_date'] = moment(date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
+                                            req.body['bill_date'] = moment(date).format('YYYY-MM-DD') + 'T00:00:00.000+00:00';
+                                            req.body['created_by'] = user.username;
+                                            req.body['balance_amount'] = customer_balance_amount;
                                             const bill = new billModel(req.body);
                                             bill.save(bill)
                                                 .then(newbilldata => {
@@ -131,26 +133,21 @@ exports.createBill = (req, res) => {
                                                     // }
                                                     
 
-                                                    console.log('\n createBill customerData: ', customerData);
                                                     customerModel.findOneAndUpdate({ '_id': req.body.customer_id }, { ...customerData }, { returnDocument: "after" })
                                                         .then(cus => {
-                                                            console.log('\n createBill cus: ', cus);
                                                             billPrintModel.findOne({ 'bill_date': req.body['bill_date'], 'customer_id': req.body.customer_id })
                                                             .then(bill_print => {
-                                                                console.log('\n createBill bill_print: ', bill_print);
                                                                 if (!bill_print) {
-                                                                    console.log('\n createBill if bill_print: ', bill_print);
                                                                     const billPrintBody = {
                                                                         'bill_date': req.body['bill_date'],
                                                                         'customer_id': req.body.customer_id,
                                                                         'name': req.body.customer_name,
                                                                         'phone_number': customerData.phone_number,
-                                                                        'items': [req.body],
+                                                                        'items': [{...req.body, billId: newbilldata['_id']}],
                                                                         'created_by': user.username,
                                                                         'created_at': new Date(),
                                                                         'modified_at': new Date()
                                                                     }
-                                                                    console.log('\n createBill billPrintBody: ', billPrintBody);
                                                                     const billPrint = new billPrintModel(billPrintBody);
                                                                     billPrint.save(billPrint).then(billprint => {
                                                                         res.send(newbilldata);
@@ -161,12 +158,11 @@ exports.createBill = (req, res) => {
                                                                         });
                                                                     })
                                                                 } else {
-                                                                    console.log('\n createBill else bill_print: ', bill_print);
+                                                                    req.body['billId'] = newbilldata['_id'];
                                                                     bill_print['items'].push({...req.body})
                                                                     bill_print['modified_at'] = new Date()
                                                                     billPrintModel.findOneAndUpdate({ '_id': bill_print._id }, {...bill_print}, { returnDocument: "after" })
                                                                     .then(bill_print_updated => {
-                                                                        console.log('\n createBill bill_print_updated: ', bill_print_updated);
                                                                         res.send(newbilldata);
                                                                     })
                                                                     .catch(err => {
@@ -268,25 +264,38 @@ exports.deleteBill = (req, res) => {
                         customerModel.findOne({ '_id': customerId }).then(customer => {
                             const deductableAmount = customer.balance_amount - data.total_amount;
                             let customer_bills = customer;
-                            const billDate = moment(bill_date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
                             customer_bills['balance_amount'] = deductableAmount;
-                            let existingCollectionsIndex;
-                            existingCollectionsIndex = customer_bills.customerCollection.findIndex(collection => collection.bill_date === billDate);
-                            const billInd = customer_bills.customerCollection[existingCollectionsIndex].records.findIndex(b => b.billId === id);
-                            customer_bills.customerCollection[existingCollectionsIndex].records.splice(billInd, 1);
-                            if (customer_bills.customerCollection[existingCollectionsIndex].records.length === 0) {
-                                customer_bills.customerCollection.splice(existingCollectionsIndex, 1);
-                            }
                             customerModel.findOneAndUpdate({ '_id': customerId }, { ...customer_bills }, { returnDocument: "after" })
                                 .then(cus => {
-                                    billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
-                                        res.send({ success: true, message: "Bill Deleted Successfully" });
-                                    })
+                                    billPrintModel.findOne({ 'bill_date': bill_date, 'customer_id': customerId })
+                                    .then(billprint => {
+                                        let new_bill_print = billprint;
+                                        let existingCollectionsIndex;
+                                        existingCollectionsIndex = new_bill_print.items.findIndex(item => item.billId === id);
+                                        new_bill_print.items.splice(existingCollectionsIndex, 1);
+                                        billPrintModel.findOneAndUpdate({ 'bill_date': bill_date, 'customer_id': customerId }, {...new_bill_print}, { returnDocument: "after" }).then(update_billprint => {
+                                            
+                                            // Delete Bill
+                                            billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
+                                                res.send({ success: true, message: "Bill Deleted Successfully" });
+                                            })
+                                            .catch(err => {
+                                                res.status(500).send({
+                                                    message: err.message || 'bill not removed'
+                                                });
+                                            })
+                                        })
                                         .catch(err => {
                                             res.status(500).send({
-                                                message: err.message || 'bill not removed'
+                                                message: err.message || 'bill print not updated'
                                             });
                                         })
+                                    })
+                                    .catch(err => {
+                                        res.status(500).send({
+                                            message: err.message || 'bill not found'
+                                        });
+                                    })
                                 })
                                 .catch(err => {
                                     res.status(500).send({
@@ -294,11 +303,11 @@ exports.deleteBill = (req, res) => {
                                     });
                                 })
                         })
-                            .catch(err => {
-                                res.status(500).send({
-                                    message: err.message || 'customer not found'
-                                });
-                            })
+                        .catch(err => {
+                            res.status(500).send({
+                                message: err.message || 'customer not found'
+                            });
+                        })
                     }
                 })
                 .catch(err => {
