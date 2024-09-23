@@ -31,6 +31,10 @@ var bill_print = new mongoose.Schema({
     created_by: {
         type: String,
         required: true
+    },
+    bill_amount: {
+        type: Number,
+        default: 0
     }
 });
 

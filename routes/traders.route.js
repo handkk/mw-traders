@@ -34,7 +34,6 @@ router.post('/customers', customerController.getCustomers);
 router.post('/customer', customerController.createCustomer);
 router.put('/customer/:id', customerController.updateCustomer);
 router.delete('/customer/:id', customerController.deleteCustomer);
-router.post('/statement', customerController.customerStatement);
 
 // Vegetable apis
 router.post('/vegetable', vegetableController.createVegetable);
@@ -48,12 +47,17 @@ router.post('/new-bill', billController.createBill);
 router.delete('/bill/:id', billController.deleteBill);
 router.put('/update-bill/:id', billController.updateBill);
 router.post('/day_bills', customerController.dayBills);
-router.post('/customer_bills', billPrintController.getBillPrints);
 
 // Collection apis
 router.post('/new-collection', collectionController.createCollection);
 router.post('/collections', collectionController.getCollections);
 router.delete('/collection/:id', collectionController.deleteCollection);
 router.post('/customer-collections/:id', collectionController.getCollectionsByCustomer);
+
+// bill print apis
+router.post('/customer_bills', billPrintController.getBillPrints);
+
+// statement apis
+router.post('/statement', billPrintController.customerStatement);
 
 module.exports = router;

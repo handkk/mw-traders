@@ -338,43 +338,7 @@ exports.dayBills = (req, res) => {
         });
 }
 
-// Balance Statement
-exports.customerStatement = (req, res) => {
-    const userid = req.body.userId;
-    const sessionId = req.body.sessionId;
-    const userreq = {
-        'userId': userid,
-        'sessionId': sessionId
-    }
 
-    userModel.findOne(userreq).then(user => {
-        if (user) {
-            customerModel.find({ '_id': req.body.customer_id }).then(customers => {
-                const cust = customers;
-                console.log('\n cust: ', cust);
-                if (cust) {
-                    res.send(cust);
-                }
-            })
-                .catch(err => {
-                    res.status(500).send({
-                        message: err.message || 'customers not found'
-                    });
-                })
-        } else {
-            res.status(500).send({
-                success: false,
-                code: 1000,
-                message: 'User session ended, Please login again'
-            })
-        }
-    })
-        .catch(err => {
-            res.status(500).send({
-                message: err.message || 'User not found'
-            });
-        });
-}
 function filterCustomerCollectionByDate(customerData, passedDate) {
     let filteredData = []
 

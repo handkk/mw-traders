@@ -1,6 +1,7 @@
 'use strict';
 var userModel = require('../models/user.model');
 var billPrintModel = require('../models/bill_print.model');
+var collectionModel = require('../models/collection.model');
 var breakCount = 10;
 
 // Get Bill Prints
@@ -21,10 +22,8 @@ exports.getBillPrints = (req, res) => {
             if (req.body.bill_date) {
                 dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000+00:00';
             }
-            console.log('\n getBillPrints dateQuery: ', dateQuery);
             var query = billPrintModel.find(dateQuery);
             query.exec().then(async billsData => {
-                console.log('\n getBillPrints billsData: ', billsData);
                 // billsData.map(item => item.items = maxRecordsCount(billsData))
                 res.send(maxRecordsCount(billsData));
             })
@@ -84,10 +83,8 @@ function maxRecordsCount(customerData) {
     } else {
         filteredArray.forEach((f, inde) => {
             if ((inde) === 0) {
-                console.log('10');
                 f['continue'] = 'Continue...';
             } else if (inde === 1) {
-                console.log('20');
                 f['second'] = '(ii)';
             } else if (inde === 2) {
                 f['third'] = '(iii)';
@@ -96,7 +93,6 @@ function maxRecordsCount(customerData) {
             }
         })
         finalArray = filteredArray;
-        console.log('this.finalArray: ', finalArray);
     }
     return finalArray
   }
@@ -106,3 +102,72 @@ function maxRecordsCount(customerData) {
       return item.total_amount + count;
     }, 0)
   }
+
+  // Balance Statement
+exports.customerStatement = (req, res) => {
+    if (!req.body) {
+        return res.status(400).send({ message: 'Data to update can not be empty' });
+    }
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
+    }
+    const userid = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': userid,
+        'sessionId': sessionId
+    }
+
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            const fromDate = req.body.from_date + 'T00:00:00.000+00:00';
+            const toDate = req.body.to_date + 'T00:00:00.000+00:00';
+            billPrintModel.find({ 'customer_id': req.body.customer_id, 'bill_date': { $gte: fromDate, $lte: toDate } }).then(bills => {
+                let statement = bills;
+                if (statement && (Array.isArray(statement) && statement.length > 0)) {
+                    statement.forEach(state => {
+                        state['bill_amount'] = returnSum(state.items);
+                    })
+                }
+                collectionModel.find({ 'customer_id': req.body.customer_id, 'collection_date': { $gte: fromDate, $lte: toDate } }).then(collections => {
+                    let finalResult = [];
+                    finalResult = statement;
+                    if (collections && (Array.isArray(collections) && collections.length > 0)) {
+                        collections.forEach(col => {
+                            const collection = {
+                                'bill_date': col.collection_date,
+                                'type': 'collection',
+                                'collected_amount': col.amount
+                            }
+                            finalResult.push(collection);
+                        })
+                        res.send(finalResult);
+                    } else {
+                        res.send(finalResult);
+                    }
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'collections not found'
+                    });
+                })
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'transactions not found'
+                });
+            })
+        } else {
+            res.status(500).send({
+                success: false,
+                code: 1000,
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'User not found'
+        });
+    });
+}
