@@ -146,7 +146,9 @@ exports.createBill = (req, res) => {
                                                                         'items': [{...req.body, billId: newbilldata['_id']}],
                                                                         'created_by': user.username,
                                                                         'created_at': new Date(),
-                                                                        'modified_at': new Date()
+                                                                        'modified_at': new Date(),
+                                                                        'balance_amount': req.body['balance_amount'],
+                                                                        'bill_amount': req.body['total_amount']
                                                                     }
                                                                     const billPrint = new billPrintModel(billPrintBody);
                                                                     billPrint.save(billPrint).then(billprint => {
@@ -161,6 +163,8 @@ exports.createBill = (req, res) => {
                                                                     req.body['billId'] = newbilldata['_id'];
                                                                     bill_print['items'].push({...req.body})
                                                                     bill_print['modified_at'] = new Date()
+                                                                    bill_print['balance_amount'] = bill_print['balance_amount'] + req.body['total_amount']
+                                                                    bill_print['bill_amount'] = bill_print['bill_amount'] + req.body['total_amount'];
                                                                     billPrintModel.findOneAndUpdate({ '_id': bill_print._id }, {...bill_print}, { returnDocument: "after" })
                                                                     .then(bill_print_updated => {
                                                                         res.send(newbilldata);
@@ -273,6 +277,7 @@ exports.deleteBill = (req, res) => {
                                         let existingCollectionsIndex;
                                         existingCollectionsIndex = new_bill_print.items.findIndex(item => item.billId === id);
                                         new_bill_print.items.splice(existingCollectionsIndex, 1);
+                                        new_bill_print['bill_amount'] = new_bill_print['bill_amount'] - data.total_amount;
                                         billPrintModel.findOneAndUpdate({ 'bill_date': bill_date, 'customer_id': customerId }, {...new_bill_print}, { returnDocument: "after" }).then(update_billprint => {
                                             
                                             // Delete Bill

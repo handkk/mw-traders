@@ -46,6 +46,11 @@ var collection = new mongoose.Schema({
     created_by: {
         type: String,
         required: true
+    },
+    customer_balance: {
+        type: Number,
+        required: true,
+        default: 0
     }
 });
 

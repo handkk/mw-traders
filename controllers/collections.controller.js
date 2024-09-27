@@ -74,6 +74,7 @@ exports.createCollection = (req, res) => {
             customerModel.findOne({'_id': collectiondata.customer_id}).then(customer_data => {
                 if (customer_data) {
                     if (customer_data.balance_amount > 0) {
+                        req.body['customer_balance'] = customer_data.balance_amount - req.body.amount;
                         const collection = new collectionModel(req.body);
                         collection.save(collection)
                         .then(newbilldata => {

@@ -2,7 +2,7 @@
 var userModel = require('../models/user.model');
 var billPrintModel = require('../models/bill_print.model');
 var collectionModel = require('../models/collection.model');
-var breakCount = 10;
+var breakCount = 9;
 
 // Get Bill Prints
 exports.getBillPrints = (req, res) => {
@@ -27,9 +27,39 @@ exports.getBillPrints = (req, res) => {
             }
             var query = billPrintModel.find(dateQuery);
             query.exec().then(async billsData => {
-                // billsData.map(item => item.items = maxRecordsCount(billsData))
-                const processedBillsData = await maxRecordsCount(billsData);
-                res.send(processedBillsData);
+                let bills_data = billsData;
+                let customerIds = [];
+                let billprintData = {
+                    'bills': [],
+                    'collections': []
+                };
+                let lastcollection = [];
+                bills_data.forEach(async bill => {
+                    customerIds.push(bill.customer_id)
+                })
+                // console.log('\n bills_data: ========== ', bills_data);
+                // const processedBillsData = await maxRecordsCount(bills_data);
+                
+                // res.send(processedBillsData);
+                collectionModel.find({ 'customer_id': { $in: customerIds } }).sort({'modified_at': -1}).then(async col => {
+                    console.log('\n col: ', col);
+                    if (col.length && col.length > 0) {
+                        lastcollection.push(col[0]);
+                        if (col.length > 2 || col.length == 2) {
+                            lastcollection.push(col[1]);
+                        }
+                    }
+                    const processedBillsData = await maxRecordsCount(billsData);
+                    billprintData['bills'] = processedBillsData;
+                    billprintData['collections'] = lastcollection;
+                    console.log('\n billprintData: =============== ', billprintData);
+                    res.send(processedBillsData);
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Not able to fetch the bills'
+                    })
+                })
             })
             .catch(err => {
                 res.status(500).send({
@@ -66,17 +96,24 @@ function maxRecordsCount(customerData) {
         firstData['bill_date'] = dataObject.bill_date;
         firstData['name'] = dataObject.name;
         firstData['phone_number'] = dataObject.phone_number;
+        firstData['balance_amount'] = dataObject.balance_amount;
         let secondData = { ...dataObject }
         secondData.items = secondPart;
         secondData['bill_date'] = dataObject.bill_date;
         secondData['name'] = dataObject.name;
         secondData['phone_number'] = dataObject.phone_number;
-        secondData.total_amount = returnSum(secondData.items);
-        firstData.total_amount = returnSum(firstData.items);
+        secondData['balance_amount'] = dataObject.balance_amount;
+        // secondData.total_bill = returnSum(secondData.items);
+        // firstData.total_bill = returnSum(firstData.items);
+        firstData.bill_amount = returnSum(firstData.items);
+        secondData.bill_amount = returnSum(secondData.items);
         filteredArray.push(firstData);
         filteredArray.push(secondData);
       } else {
-        dataObject['total_amount'] = returnSum(dataObject.items);
+        // let total_amount = 0;
+        // dataObject.items.forEach(async obj => {
+        //     total_amount = total_amount + obj.total_amount;
+        // })
         filteredArray.push(dataObject)
       }
     })
@@ -137,27 +174,44 @@ exports.customerStatement = (req, res) => {
             const toDate = req.body.to_date + 'T00:00:00.000+00:00';
             billPrintModel.find({ 'customer_id': req.body.customer_id, 'bill_date': { $gte: fromDate, $lte: toDate } }).then(bills => {
                 let statement = bills;
+                let finalStatement= {
+                    'statement': [],
+                    'total_bill_amount': 0,
+                    'total_collected_amount': 0,
+                    'open_balance': 0
+                };
                 if (statement && (Array.isArray(statement) && statement.length > 0)) {
-                    statement.forEach(state => {
+                    let total_bill_amount = 0;
+                    statement.forEach((state, index) => {
                         state['bill_amount'] = returnSum(state.items);
+                        total_bill_amount = total_bill_amount + state['bill_amount']
                     })
+                    finalStatement['open_balance'] = statement[0].balance_amount - statement[0].bill_amount;
+                    finalStatement['total_bill_amount'] = total_bill_amount;
+                    finalStatement['statement'] = statement;
                 }
                 collectionModel.find({ 'customer_id': req.body.customer_id, 'collection_date': { $gte: fromDate, $lte: toDate } }).then(collections => {
                     let finalResult = [];
-                    finalResult = statement;
+                    finalResult = finalStatement['statement'];
                     if (collections && (Array.isArray(collections) && collections.length > 0)) {
+                        let total_collected_amount = 0;
                         collections.forEach(col => {
                             const collection = {
                                 'bill_date': col.collection_date,
                                 'type': 'collection',
-                                'collected_amount': col.amount
+                                'collected_amount': col.amount,
+                                'customer_balance': col.customer_balance
                             }
+                            total_collected_amount = total_collected_amount + col.amount;
                             finalResult.push(collection);
                         })
                         finalResult = finalResult.sort(function(a, b){return a.bill_date - b.bill_date});
-                        res.send(finalResult);
+                        finalStatement['statement'] = finalResult;
+                        finalStatement['total_collected_amount'] = total_collected_amount;
+                        res.send(finalStatement);
                     } else {
-                        res.send(finalResult);
+                        finalStatement['statement'] = finalResult;
+                        res.send(finalStatement);
                     }
                 })
                 .catch(err => {
