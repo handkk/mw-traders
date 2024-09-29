@@ -283,63 +283,6 @@ exports.deleteCustomer = (req, res) => {
     
 }
 
-// Day Collections of Customer
-exports.dayBills = (req, res) => {
-    const userid = req.body.userId;
-    const sessionId = req.body.sessionId;
-    const userreq = {
-        'userId': userid,
-        'sessionId': sessionId
-    }
-    const billDate = moment(req.body.bill_date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
-    userModel.findOne(userreq).then(user => {
-        if (user) {
-            customerModel.find({}).then(all_customers => {
-                let customers = all_customers;
-                if (customers) {
-                    let dayBills = [];
-                    customers.forEach(cus => {
-                        if (cus.customerCollection && cus.customerCollection.length > 0) {
-                            let collection;
-                            collection = cus.customerCollection.find(col => col.bill_date === billDate);
-                            if (collection) {
-                                collection['balance_amount'] = cus.balance_amount;
-                                collection['today_amount'] = 0;
-                                if (collection.records && collection.records.length > 0) {
-                                    collection.records.forEach(rec => {
-                                        collection['today_amount'] = collection['today_amount'] + rec.total_amount;
-                                    });
-                                }
-                                dayBills.push(collection);
-                            }
-                        }
-                    });
-                    res.send(dayBills);
-                } else {
-                    res.send([]);
-                }
-            })
-                .catch(err => {
-                    res.status(500).send({
-                        message: err.message || 'Bills not found'
-                    });
-                });
-        } else {
-            res.status(500).send({
-                success: false,
-                code: 1000,
-                message: 'User session ended, Please login again'
-            })
-        }
-    })
-        .catch(err => {
-            res.status(500).send({
-                message: err.message || 'User not found'
-            });
-        });
-}
-
-
 function filterCustomerCollectionByDate(customerData, passedDate) {
     let filteredData = []
 

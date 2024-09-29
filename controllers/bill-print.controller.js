@@ -2,83 +2,92 @@
 var userModel = require('../models/user.model');
 var billPrintModel = require('../models/bill_print.model');
 var collectionModel = require('../models/collection.model');
+var customerModel = require('../models/customer.model');
 var breakCount = 9;
 
 // Get Bill Prints
 exports.getBillPrints = (req, res) => {
-    if (!req.body) {
-        return res.status(400).send({ message: 'Request payload can not be empty' });
-    }
-    if (req.body && (!req.body.userId && !req.body.sessionId)) {
-        return res.status(400).send({message: 'userid & sessionid is required'});
-    }
-    if (req.body && (!req.body.bill_date)) {
-        return res.status(400).send({message: 'Bill Date is required'});
-    }
-    const userreq = {
-        'userId': req.body.userId,
-        'sessionId': req.body.sessionId
-    }
-    userModel.findOne(userreq).then(user => {
-        if (user) {
-            let dateQuery = {};
-            if (req.body.bill_date) {
-                dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000+00:00';
-            }
-            var query = billPrintModel.find(dateQuery);
-            query.exec().then(async billsData => {
-                let bills_data = billsData;
-                let customerIds = [];
-                let billprintData = {
-                    'bills': [],
-                    'collections': []
-                };
-                let lastcollection = [];
-                bills_data.forEach(async bill => {
-                    customerIds.push(bill.customer_id)
-                })
-                // console.log('\n bills_data: ========== ', bills_data);
-                // const processedBillsData = await maxRecordsCount(bills_data);
-                
-                // res.send(processedBillsData);
-                collectionModel.find({ 'customer_id': { $in: customerIds } }).sort({'modified_at': -1}).then(async col => {
-                    console.log('\n col: ', col);
-                    if (col.length && col.length > 0) {
-                        lastcollection.push(col[0]);
-                        if (col.length > 2 || col.length == 2) {
-                            lastcollection.push(col[1]);
-                        }
+    try {
+        if (!req.body) {
+            return res.status(400).send({ message: 'Request payload can not be empty' });
+        }
+        if (req.body && (!req.body.userId && !req.body.sessionId)) {
+            return res.status(400).send({message: 'userid & sessionid is required'});
+        }
+        if (req.body && (!req.body.bill_date)) {
+            return res.status(400).send({message: 'Bill Date is required'});
+        }
+        const userreq = {
+            'userId': req.body.userId,
+            'sessionId': req.body.sessionId
+        }
+        userModel.findOne(userreq).then(user => {
+            if (user) {
+                let dateQuery = {};
+                if (req.body.bill_date) {
+                    dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000+00:00';
+                }
+                var query = billPrintModel.find(dateQuery);
+                query.exec().then(async billsData => {
+                    let bills_data = billsData;
+                    let customerIds = [];
+                    let billprintData = {
+                        'bills': [],
+                        'collections': []
+                    };
+                    let lastcollection = [];
+                    if (bills_data && bills_data.length > 0) {
+                        bills_data.forEach(async bill => {
+                            customerIds.push(bill.customer_id)
+                        });
+                        let customer_balance = await customerModel.find({ '_id': { $in: customerIds } });
+                        let col = await collectionModel.find({ 'customer_id': { $in: customerIds } }).sort({'modified_at': -1});
+    
+                        const processedBillsData = await maxRecordsCount(bills_data);
+                        billprintData['bills'] = processedBillsData;
+                        await billprintData.bills.forEach(bills => {
+                            bills.collectionData = [];
+                            if (customer_balance && customer_balance.length > 0) {
+                                const index = customer_balance.findIndex(cus => cus.name === bills['name'])
+                                if (index >= 0) {
+                                    bills['balance_amount'] = customer_balance[index].balance_amount;
+                                }
+                            }
+                            if (col && col.length > 0) {
+                                lastcollection.push(col[0]);
+                                if (col.length > 2 || col.length == 2) {
+                                    lastcollection.push(col[1]);
+                                }
+                                const collectionInd = lastcollection.findIndex(coll=> coll.customer_name === bills['name']);
+                                if (collectionInd >= 0) {
+                                    bills.collectionData = col[collectionInd];
+                                }
+                            }
+                        })
                     }
-                    const processedBillsData = await maxRecordsCount(billsData);
-                    billprintData['bills'] = processedBillsData;
-                    billprintData['collections'] = lastcollection;
-                    console.log('\n billprintData: =============== ', billprintData);
-                    res.send(processedBillsData);
+                    res.send(billprintData['bills']);
                 })
                 .catch(err => {
                     res.status(500).send({
                         message: err.message || 'Not able to fetch the bills'
                     })
                 })
-            })
-            .catch(err => {
+            } else {
                 res.status(500).send({
-                    message: err.message || 'Not able to fetch the bills'
+                    success: false,
+                    code: 1000,
+                    message: 'User session ended, Please login again'
                 })
-            })
-        } else {
-            res.status(500).send({
-                success: false,
-                code: 1000,
-                message: 'User session ended, Please login again'
-            })
-        }
-    })
-    .catch(err => {
-        res.status(500).send({
-            message: err.message || 'Not able to fetch the bills'
+            }
         })
-    })
+        .catch(err => {
+            res.status(500).send({
+                message: err.message || 'Not able to fetch the bills'
+            })
+        })
+    } catch (e) {
+        console.log('get bill print catch block ', e);
+    }
 }
 
 function maxRecordsCount(customerData) {
@@ -186,7 +195,7 @@ exports.customerStatement = (req, res) => {
                         state['bill_amount'] = returnSum(state.items);
                         total_bill_amount = total_bill_amount + state['bill_amount']
                     })
-                    finalStatement['open_balance'] = statement[0].balance_amount - statement[0].bill_amount;
+                    finalStatement['open_balance'] = statement[0].balance_amount > 0 ? (statement[0].balance_amount - statement[0].bill_amount) : 0;
                     finalStatement['total_bill_amount'] = total_bill_amount;
                     finalStatement['statement'] = statement;
                 }
@@ -238,4 +247,47 @@ exports.customerStatement = (req, res) => {
             message: err.message || 'User not found'
         });
     });
+}
+
+// Day Collections of Customer
+exports.dayBills = (req, res) => {
+    try {
+        const userid = req.body.userId;
+        const sessionId = req.body.sessionId;
+        const userreq = {
+            'userId': userid,
+            'sessionId': sessionId
+        }
+        const billDate = req.body.bill_date + 'T00:00:00.000+00:00';
+        userModel.findOne(userreq).then(user => {
+            if (user) {
+                billPrintModel.find({ 'bill_date': billDate }).then(all_bills => {
+                    let all_bills_data = all_bills;
+                    if (all_bills_data && all_bills_data.length > 0) {
+                        res.send(all_bills_data);
+                    } else {
+                        res.send([]);
+                    }
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Bills not found'
+                    });
+                });
+            } else {
+                res.status(500).send({
+                    success: false,
+                    code: 1000,
+                    message: 'User session ended, Please login again'
+                })
+            }
+        })
+        .catch(err => {
+            res.status(500).send({
+                message: err.message || 'User not found'
+            });
+        });
+    } catch (e) {
+        console.log('day Bills catch block ', e);
+    }
 }

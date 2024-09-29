@@ -272,29 +272,49 @@ exports.deleteBill = (req, res) => {
                             customerModel.findOneAndUpdate({ '_id': customerId }, { ...customer_bills }, { returnDocument: "after" })
                                 .then(cus => {
                                     billPrintModel.findOne({ 'bill_date': bill_date, 'customer_id': customerId })
-                                    .then(billprint => {
+                                    .then(async billprint => {
                                         let new_bill_print = billprint;
                                         let existingCollectionsIndex;
                                         existingCollectionsIndex = new_bill_print.items.findIndex(item => item.billId === id);
                                         new_bill_print.items.splice(existingCollectionsIndex, 1);
-                                        new_bill_print['bill_amount'] = new_bill_print['bill_amount'] - data.total_amount;
-                                        billPrintModel.findOneAndUpdate({ 'bill_date': bill_date, 'customer_id': customerId }, {...new_bill_print}, { returnDocument: "after" }).then(update_billprint => {
-                                            
-                                            // Delete Bill
-                                            billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
-                                                res.send({ success: true, message: "Bill Deleted Successfully" });
+                                        if (new_bill_print.items && new_bill_print.items.length > 0) {
+                                            new_bill_print['bill_amount'] = new_bill_print['bill_amount'] - data.total_amount;
+                                            billPrintModel.findOneAndUpdate({ 'bill_date': bill_date, 'customer_id': customerId }, {...new_bill_print}, { returnDocument: "after" }).then(update_billprint => {
+                                                
+                                                // Delete Bill
+                                                billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
+                                                    res.send({ success: true, message: "Bill Deleted Successfully" });
+                                                })
+                                                .catch(err => {
+                                                    res.status(500).send({
+                                                        message: err.message || 'bill not removed'
+                                                    });
+                                                })
                                             })
                                             .catch(err => {
                                                 res.status(500).send({
-                                                    message: err.message || 'bill not removed'
+                                                    message: err.message || 'bill print not updated'
                                                 });
                                             })
-                                        })
-                                        .catch(err => {
-                                            res.status(500).send({
-                                                message: err.message || 'bill print not updated'
-                                            });
-                                        })
+                                        } else if (new_bill_print.items && new_bill_print.items.length === 0) {
+                                            try {
+                                                const delete_bill_print = await billPrintModel.findOneAndDelete({ 'bill_date': bill_date, 'customer_id': customerId })
+                                                // Delete Bill
+                                                billModel.findOneAndDelete({ '_id': id }).then(billRemoved => {
+                                                    res.send({ success: true, message: "Bill Deleted Successfully" });
+                                                })
+                                                .catch(err => {
+                                                    res.status(500).send({
+                                                        message: err.message || 'bill not removed'
+                                                    });
+                                                })
+                                            } catch (e) {
+                                                console.log('delete last bill catch block ', e);
+                                                res.status(500).send({
+                                                    message: err.message || 'bill not removed'
+                                                })
+                                            }
+                                        }
                                     })
                                     .catch(err => {
                                         res.status(500).send({
