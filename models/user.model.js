@@ -40,17 +40,8 @@ var user = new mongoose.Schema({
         default: ''
     },
     apps: {
-        type: schema.Types.Mixed,
-        default: {
-            admin: false,
-            customers: false,
-            farmer: false,
-            vegetable: false,
-            user: false,
-            bill: false,
-            collection: false,
-            billprint: false
-        }
+        type: Object,
+        default: null
     },
     created_at: {
         type: Date,

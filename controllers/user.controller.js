@@ -1,6 +1,7 @@
 'use strict';
 var userModel = require('../models/user.model');
 const { v4: uuidv4 } = require('uuid');
+const CryptoJS = require("crypto-js");
 
 // Get Users
 exports.getUsers = (req, res) => {
@@ -19,6 +20,9 @@ exports.getUsers = (req, res) => {
                 'data': usersData,
                 'total': count
             };
+            // const encryptText = 'U2FsdGVkX18ufMzT3PJLyMutnEEss1xCvurID/kG8bg=';
+            // const hashedPassword = decrypt(encryptText);
+            // console.log('\n hashedPassword: ', hashedPassword);
             res.send(result);
         })
         .catch(err => {
@@ -32,6 +36,16 @@ exports.getUsers = (req, res) => {
             message: err.message || 'Not able to fetch the users'
         })
     })
+}
+
+function decrypt(textToDecrypt) {
+    const key = process.env.PASS_SEC;
+    return CryptoJS.AES.decrypt(textToDecrypt, key.trim()).toString(CryptoJS.enc.Utf8);
+}
+
+function encrypt(value) {
+    const key = process.env.PASS_SEC;
+    return CryptoJS.AES.encrypt(value, key.trim()).toString();
 }
 
 // Create New User
@@ -58,6 +72,8 @@ exports.createUser = (req, res) => {
                 } else {
                     const uuid = uuidv4();
                     req.body['userId'] = uuid;
+                    const pwd = req.body['password'];
+                    req.body['password'] = encrypt(pwd);
                     const user = new userModel(req.body);
                     user.save(user)
                     .then(data => {
@@ -347,6 +363,59 @@ exports.resetpassword = (req, res) => {
     .catch(err => {
         res.status(500).send({
             message: err.message || 'not able to get user info'
+        });
+    })
+}
+
+// Update User Permissions
+exports.updateUserPermissions = (req, res) => {
+    if (!req.body) {
+        return res.status(400).send({message: 'Data to update can not be empty'});
+    }
+    if (req.body && !req.body.id) {
+        return res.status(400).send({message: 'User id is required'});
+    }
+    const userid = req.body.id;
+    const user_id = req.body.userId;
+    const sessionId = req.body.sessionId;
+    const userreq = {
+        'userId': user_id,
+        'sessionId': sessionId
+    }
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            if (user.username === 'admin') {
+                userModel.findOneAndUpdate({'_id': userid}, { 'apps': req.body.apps }, { returnDocument: "after" })
+                .then(updatedUserData => {
+                    if (!updatedUserData) {
+                        res.status(404).send({
+                            message: `Cannot update user with id ${userid}`
+                        });
+                    } else {
+                        res.send(updatedUserData);
+                    }
+                })
+                .catch(err => {
+                    res.status(500).send({
+                        message: err.message || 'Update operation is not occured'
+                    });
+                })
+            } else {
+                res.status(403).send({
+                    message: 'User does not have permissions to update'
+                });
+            }
+        } else {
+            res.status(500).send({
+                success: false,
+                code: 1000,
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'delete operation is not occured'
         });
     })
 }

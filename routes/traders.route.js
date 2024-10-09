@@ -22,6 +22,8 @@ router.get('/user_info/:id', userController.getUserInfo);
 router.post('/login', userController.login);
 router.post('/logout', userController.logout);
 router.post('/reset_password', userController.resetpassword);
+router.post('/update_permissions', userController.updateUserPermissions);
+
 
 // Farmer apis
 router.post('/farmers', farmerController.getFarmers);
