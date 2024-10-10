@@ -7,6 +7,7 @@ var customerModel = require('../models/customer.model');
 const moment = require('moment');
 const lodash = require('lodash');
 var billPrintModel = require('../models/bill_print.model');
+var farmerBillModel = require('../models/farmer_bill.model');
 
 // Get Bills
 exports.getBills = (req, res) => {
@@ -116,7 +117,7 @@ exports.createBill = (req, res) => {
                                             req.body['balance_amount'] = customer_balance_amount;
                                             const bill = new billModel(req.body);
                                             bill.save(bill)
-                                                .then(newbilldata => {
+                                                .then(async newbilldata => {
                                                     // const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
                                                     customerData['balance_amount'] = customer_balance_amount;
                                                     // if (existingCollection) {
@@ -131,6 +132,86 @@ exports.createBill = (req, res) => {
                                                         //     records: [{ ...req.body, billId: newbilldata['_id'] }],
                                                         // });
                                                     // }
+                                                    let farmerBill = await farmerBillModel.findOne({ 'farmer_id': req.body.farmer_id, 'date': req.body['bill_date'] });
+                                                    if (farmerBill) {
+                                                        let updateFarmer = farmerBill;
+                                                        const vegetableInd = updateFarmer.vegetables.findIndex(veg => (veg.name === req.body.vegetable_name && veg.rate === req.body.rate));
+                                                        if (vegetableInd !== -1) {
+                                                            const rate = updateFarmer.vegetables[vegetableInd].rate;
+                                                            const quantity = updateFarmer.vegetables[vegetableInd].quantity;
+                                                            const amount = updateFarmer.vegetables[vegetableInd].amount;
+                                                            updateFarmer.vegetables.splice(vegetableInd, 1);
+                                                            if (updateFarmer.vegetables.length > 0) {
+                                                                updateFarmer.vegetables.push({
+                                                                    'name': req.body.vegetable_name,
+                                                                    'id': req.body.vegetable_id,
+                                                                    'rate': req.body.rate,
+                                                                    'quantity': quantity + req.body.quantity,
+                                                                    'amount': amount + req.body['total_amount'],
+                                                                    'date': req.body['bill_date'],
+                                                                    'created_by': user.username
+                                                                })
+                                                            } else {
+                                                                updateFarmer.vegetables.push({
+                                                                    'name': req.body.vegetable_name,
+                                                                    'id': req.body.vegetable_id,
+                                                                    'rate': req.body.rate,
+                                                                    'quantity': quantity + req.body.quantity,
+                                                                    'amount': amount + req.body['total_amount'],
+                                                                    'date': req.body['bill_date'],
+                                                                    'created_by': user.username
+                                                                })
+                                                            }
+                                                        } else {
+                                                            updateFarmer.vegetables.push({
+                                                                'name': req.body.vegetable_name,
+                                                                'id': req.body.vegetable_id,
+                                                                'rate': req.body.rate,
+                                                                'quantity': req.body.quantity,
+                                                                'amount': req.body['total_amount'],
+                                                                'date': req.body['bill_date'],
+                                                                'created_by': user.username
+                                                            })
+                                                        }
+                                                        let farmerBillUpdate = await farmerBillModel.findOneAndUpdate({'farmer_id': req.body.farmer_id, 'date': req.body['bill_date']}, {
+                                                            'balance': updateFarmer.balance + req.body['total_amount'],
+                                                            'balance_amount': updateFarmer.balance_amount + req.body['total_amount'],
+                                                            'vegetables': updateFarmer.vegetables,
+                                                            'modified_at': new Date()
+                                                        }, { returnDocument: "after" });
+                                                        if (farmerBillUpdate) {
+                                                            // console.log('\n farmerBillUpdate updated');
+                                                        } else {
+                                                            // console.log('\n farmerBillUpdate not updated');
+                                                        }
+                                                    } else {
+                                                        const vegetable = {
+                                                            'name': req.body.vegetable_name,
+                                                            'id': req.body.vegetable_id,
+                                                            'rate': req.body.rate,
+                                                            'quantity': req.body.quantity,
+                                                            'amount': req.body['total_amount'],
+                                                            'date': req.body['bill_date'],
+                                                            'created_by': user.username
+                                                        }
+                                                        const farmerBody = {
+                                                            'farmer_id': req.body.farmer_id,
+                                                            'farmer_name': req.body.farmer_name,
+                                                            'date': req.body['bill_date'],
+                                                            'balance': req.body['total_amount'],
+                                                            'vegetables': [vegetable],
+                                                            'created_by': user.username,
+                                                            'balance_amount': req.body['total_amount'],
+                                                            'created_at': new Date(),
+                                                            'modified_at': new Date()
+                                                        };
+                                                        let farmerBillInsert = await farmerBillModel.create(farmerBody);
+                                                        if (farmerBillInsert) {
+                                                            // console.log('\n farmerBillInsert ', farmerBillInsert);
+                                                        } else {
+                                                            // console.log('\n farmerBillInsert faile ', farmerBillInsert);
+                                                        }
+                                                    }
                                                     
 
                                                     customerModel.findOneAndUpdate({ '_id': req.body.customer_id }, { ...customerData }, { returnDocument: "after" })
