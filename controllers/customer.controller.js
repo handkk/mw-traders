@@ -165,7 +165,6 @@ exports.deleteCustomer = (req, res) => {
                     } else if (customerData.balance_amount === 0) {
                         billModel.find({ 'customer_id': customerid })
                         .then(bill => {
-                            console.log('\n bill: ', bill);
                             if (bill && bill.length > 0) {
                                 let billIds = [];
                                 bill.forEach(b => {
@@ -173,10 +172,8 @@ exports.deleteCustomer = (req, res) => {
                                 });
                                 billModel.deleteMany({ '_id': { '$in': billIds } })
                                 .then(removed_bills => {
-                                    console.log('\n removed_bills: ', removed_bills);
                                     collectionsModel.find({ 'customer_id': customerid })
                                     .then(collection => {
-                                        console.log('\n collection: ', collection);
                                         if (collection && collection.length > 0) {
                                             let collectionIds = [];
                                             collection.forEach(c => {
@@ -184,7 +181,6 @@ exports.deleteCustomer = (req, res) => {
                                             });
                                             collectionsModel.deleteMany({ '_id': { '$in': collectionIds } })
                                             .then(removed_collection => {
-                                                console.log('\n removed_collection: ', removed_collection);
                                                 customerModel.findOneAndRemove({ '_id': customerid })
                                                 .then(removedCustomer => {
                                                     if (!removedCustomer) {
@@ -355,11 +351,9 @@ function maxRecordsCount(customerData) {
         }
     }
     let hasCollectionExceedingLimit = filteredArray.some((item) => item.records.length > maxcount+1);
-    console.log('hasCollectionExceedingLimit', hasCollectionExceedingLimit)
     if (hasCollectionExceedingLimit) {
         maxRecordsCount(filteredArray)
     }else{
-        console.log('filteredArray', filteredArray)
 
         // console.log('filteredArray', filteredArray)
         // res.send(filteredArray)
@@ -384,13 +378,13 @@ exports.customerBills = (req, res) => {
                 const skip = req.body.skip ? (req.body.skip - 1) : 0;
                 let dateQuery = {};
                 if (req.body.bill_date) {
-                    dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000Z';
+                    dateQuery['bill_date'] = req.body.bill_date;
                 }
 
 
                 var query = customerModel.find({}).sort({ 'modified_at': -1 });
                 query.exec().then(async customersData => {
-                    let data = filterCustomerCollectionByDate(customersData, req.body.bill_date + 'T00:00:00.000Z')
+                    let data = filterCustomerCollectionByDate(customersData, req.body.bill_date)
                     if(data){
 
                         res.send(data);
@@ -471,13 +465,11 @@ exports.customerBills = (req, res) => {
 // Bill Print Create
 exports.createBillPrint = (req, res) => {
     try {
-        const date1 = moment(req['bill_date']).format('YYYY-MM-DD') + 'T00:00:00.000Z';
+        const date1 = req['bill_date'];
         bill_printModel.findOne({ 'bill_date': date1, 'cusomer_id': req['cusomer_id'] }).then(data => {
             if (!data) {
                 req['created_at'] = new Date();
                 req['modified_at'] = new Date();
-                const date = req['bill_date'];
-                req['bill_date'] = moment(date).format('YYYY-MM-DD') + 'T00:00:00.000Z';
                 const bill_print = new bill_printModel(req);
                 bill_print.save(bill_print)
                     .then(bill_printdata => {

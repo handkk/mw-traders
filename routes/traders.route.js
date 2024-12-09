@@ -30,6 +30,7 @@ router.post('/farmers', farmerController.getFarmers);
 router.post('/farmer', farmerController.createFarmer);
 router.put('/farmer/:id', farmerController.updateFarmer);
 router.delete('/farmer/:id', farmerController.deleteFarmer);
+router.post('/farmer/bills', farmerController.getFarmerBills);
 
 // Customer apis
 router.post('/customers', customerController.getCustomers);

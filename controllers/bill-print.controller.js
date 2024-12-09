@@ -25,7 +25,7 @@ exports.getBillPrints = (req, res) => {
             if (user) {
                 let dateQuery = {};
                 if (req.body.bill_date) {
-                    dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000+00:00';
+                    dateQuery['bill_date'] = req.body.bill_date;
                 }
                 var query = billPrintModel.find(dateQuery);
                 query.exec().then(async billsData => {
@@ -179,8 +179,8 @@ exports.customerStatement = (req, res) => {
 
     userModel.findOne(userreq).then(user => {
         if (user) {
-            const fromDate = req.body.from_date + 'T00:00:00.000+00:00';
-            const toDate = req.body.to_date + 'T00:00:00.000+00:00';
+            const fromDate = req.body.from_date;
+            const toDate = req.body.to_date;
             billPrintModel.find({ 'customer_id': req.body.customer_id, 'bill_date': { $gte: fromDate, $lte: toDate } }).then(bills => {
                 let statement = bills;
                 let finalStatement= {
@@ -258,7 +258,7 @@ exports.dayBills = (req, res) => {
             'userId': userid,
             'sessionId': sessionId
         }
-        const billDate = req.body.bill_date + 'T00:00:00.000+00:00';
+        const billDate = req.body.bill_date;
         userModel.findOne(userreq).then(user => {
             if (user) {
                 billPrintModel.find({ 'bill_date': billDate }).then(all_bills => {

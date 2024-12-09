@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 var bill_print = new mongoose.Schema({
     bill_date: {
-        type: Date,
+        type: String,
         required: true
     },
     name: {

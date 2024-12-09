@@ -3,7 +3,7 @@ const schema = mongoose.Schema;
 
 var transaction = new mongoose.Schema({
     transaction_date: {
-        type: Date,
+        type: String,
         required: true
     },
     customer_info: {

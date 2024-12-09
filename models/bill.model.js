@@ -39,7 +39,7 @@ var bill = new mongoose.Schema({
         default: ''
     },
     bill_date: {
-        type: Date,
+        type: String,
         required: true
     },
     unit_wise: {

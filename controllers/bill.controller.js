@@ -27,7 +27,7 @@ exports.getBills = (req, res) => {
             const skip = req.body.skip ? (req.body.skip - 1) : 0;
             let dateQuery = {};
             if (req.body.bill_date) {
-                dateQuery['bill_date'] = req.body.bill_date + 'T00:00:00.000+00:00';
+                dateQuery['bill_date'] = req.body.bill_date;
             }
             billModel.count().then(count => {
                 var query = billModel.find(dateQuery).sort({ 'modified_at': -1 }).skip(skip * limit).limit(limit);
@@ -73,7 +73,6 @@ exports.createBill = (req, res) => {
         return res.status(400).send({message: 'userid & sessionid is required'});
     }
     const name = req.body.name;
-    console.log('\n createBill req.body: ', req.body);
     const userreq = {
         'userId': req.body.userId,
         'sessionId': req.body.sessionId
@@ -111,8 +110,6 @@ exports.createBill = (req, res) => {
                                             let customer_balance_amount = customerData['balance_amount'] + req.body['total_amount'];
                                             req.body['created_at'] = new Date();
                                             req.body['modified_at'] = new Date();
-                                            const date = req.body['bill_date'];
-                                            req.body['bill_date'] = moment(date).format('YYYY-MM-DD') + 'T00:00:00.000+00:00';
                                             req.body['created_by'] = user.username;
                                             req.body['balance_amount'] = customer_balance_amount;
                                             const bill = new billModel(req.body);
@@ -358,6 +355,32 @@ exports.deleteBill = (req, res) => {
                                         let existingCollectionsIndex;
                                         existingCollectionsIndex = new_bill_print.items.findIndex(item => item.billId === id);
                                         new_bill_print.items.splice(existingCollectionsIndex, 1);
+                                        let farmerBill_delete = await farmerBillModel.findOne({ 'farmer_id': data.farmer_id, 'date': data['bill_date'] });
+                                        if (farmerBill_delete) {
+                                            let updateFarmer_del = farmerBill_delete;
+                                            const vegetableInd = updateFarmer_del.vegetables.findIndex(veg => (veg.name === data.vegetable_name && veg.rate === data.rate));
+                                            if (vegetableInd !== -1) {
+                                                const quantity = updateFarmer_del.vegetables[vegetableInd].quantity - data.quantity;
+                                                const amount = updateFarmer_del.vegetables[vegetableInd].amount - data.total_amount;
+                                                if (quantity > 0) {
+                                                    updateFarmer_del.vegetables[vegetableInd].quantity = quantity;
+                                                    updateFarmer_del.vegetables[vegetableInd].amount = amount;
+                                                } else if (quantity === 0) {
+                                                    updateFarmer_del.vegetables.splice(vegetableInd, 1);
+                                                }
+                                                let farmerBillUpdate = await farmerBillModel.findOneAndUpdate({'farmer_id': data.farmer_id, 'date': data['bill_date']}, {
+                                                    'balance': updateFarmer_del.balance - data['total_amount'],
+                                                    'balance_amount': updateFarmer_del.balance_amount - data['total_amount'],
+                                                    'vegetables': updateFarmer_del.vegetables,
+                                                    'modified_at': new Date()
+                                                }, { returnDocument: "after" });
+                                                if (farmerBillUpdate) {
+                                                    // console.log('\n farmerBillUpdate updated');
+                                                } else {
+                                                    // console.log('\n farmerBillUpdate not updated');
+                                                }
+                                            }
+                                        }
                                         if (new_bill_print.items && new_bill_print.items.length > 0) {
                                             new_bill_print['bill_amount'] = new_bill_print['bill_amount'] - data.total_amount;
                                             billPrintModel.findOneAndUpdate({ 'bill_date': bill_date, 'customer_id': customerId }, {...new_bill_print}, { returnDocument: "after" }).then(update_billprint => {
@@ -390,7 +413,6 @@ exports.deleteBill = (req, res) => {
                                                     });
                                                 })
                                             } catch (e) {
-                                                console.log('delete last bill catch block ', e);
                                                 res.status(500).send({
                                                     message: err.message || 'bill not removed'
                                                 })

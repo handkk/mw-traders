@@ -1,5 +1,7 @@
 'use strict';
 var farmerModel = require('../models/farmer.model');
+var farmerBillModel = require('../models/farmer_bill.model');
+var breakCount = 9;
 
 // Get Farmers
 exports.getFarmers = (req, res) => {
@@ -96,3 +98,101 @@ exports.deleteFarmer = (req, res) => {
         });
     })   
 }
+
+// Get Farmer Bills
+exports.getFarmerBills = (req, res) => {
+    try {
+        if (!req.body) {
+            return res.status(400).send({ message: 'Request payload can not be empty' });
+        }
+        if (req.body && (!req.body.userId && !req.body.sessionId)) {
+            return res.status(400).send({message: 'userid & sessionid is required'});
+        }
+        if (req.body && (!req.body.bill_date)) {
+            return res.status(400).send({message: 'Bill Date is required'});
+        }
+        if (req.body && (!req.body.farmer_id)) {
+            return res.status(400).send({message: 'Farmer id is required'});
+        }
+        const date = req.body.bill_date;
+        farmerBillModel.find({ 'date': date, 'farmer_id': req.body.farmer_id }).then(async farmerBillsData => {
+            // const processedBillsData = await maxRecordsCount(farmerBillsData);
+            res.send(farmerBillsData);
+        })
+        .catch(err => {
+            res.status(500).send({
+                message: err.message || 'Not able to fetch the farmers'
+            })
+        })
+    } catch (e) {
+        console.log('get bill print catch block ', e);
+        res.status(500).send({
+            message: err.message || 'Not able to fetch the farmers'
+        })
+    }
+}
+
+function maxRecordsCount(customerData) {
+    let finalArray = [];
+    let filteredArray = [];
+    customerData.forEach((dataObject, index) => {
+      dataObject.vegetables.forEach((re, ind) => {
+        re['no'] = ind + 1;
+      })
+      if (dataObject.vegetables.length > breakCount + 1) {
+        let firstPart = dataObject.vegetables.slice(0, breakCount)
+        let secondPart = dataObject.vegetables.slice(breakCount)
+        let firstData = { ...dataObject }
+        firstData.vegetables = firstPart;
+        firstData['date'] = dataObject.date;
+        firstData['farmer_name'] = dataObject.farmer_name;
+        firstData['phone_number'] = dataObject.phone_number;
+        firstData['balance_amount'] = dataObject.balance_amount;
+        firstData['balance'] = dataObject.balance;
+        let secondData = { ...dataObject }
+        secondData.vegetables = secondPart;
+        secondData['bill_date'] = dataObject.bill_date;
+        secondData['farmer_name'] = dataObject.farmer_name;
+        secondData['phone_number'] = dataObject.phone_number;
+        secondData['balance_amount'] = dataObject.balance_amount;
+        secondData['balance'] = dataObject.balance;
+        // secondData.total_bill = returnSum(secondData.items);
+        // firstData.total_bill = returnSum(firstData.items);
+        firstData.bill_amount = returnSum(firstData.items);
+        secondData.bill_amount = returnSum(secondData.items);
+        filteredArray.push(firstData);
+        filteredArray.push(secondData);
+      } else {
+        // let total_amount = 0;
+        // dataObject.items.forEach(async obj => {
+        //     total_amount = total_amount + obj.total_amount;
+        // })
+        filteredArray.push(dataObject)
+      }
+    })
+    
+    let hasCollectionExceedingLimit = filteredArray.some((item) => item.items.length > breakCount + 1);
+    if (hasCollectionExceedingLimit) {
+      return maxRecordsCount(filteredArray)
+    } else {
+        filteredArray.forEach((f, inde) => {
+            if ((inde) === 0) {
+                f['continue'] = 'Continue...';
+            } else if (inde === 1) {
+                f['second'] = '(ii)';
+            } else if (inde === 2) {
+                f['third'] = '(iii)';
+            } else if (inde === 3) {
+                f['end'] = 'End...';
+            }
+        })
+        finalArray = filteredArray;
+    }
+    return finalArray
+  }
+
+  function returnSum(customerData) {
+    return customerData.reduce((count, item) => {
+      return item.total_amount + count;
+    }, 0)
+  }

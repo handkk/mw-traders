@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 var collection = new mongoose.Schema({
     collection_date: {
-        type: Date,
+        type: String,
         required: true
     },
     customer_name: {
