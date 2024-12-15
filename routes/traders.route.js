@@ -8,6 +8,7 @@ const vegetableController = require('../controllers/vegetable.controller');
 const billController = require('../controllers/bill.controller');
 const collectionController = require('../controllers/collections.controller');
 const billPrintController = require('../controllers/bill-print.controller');
+const collectionReportController = require('../controllers/collection-report');
 
 // router.get('/', (req, res) => {
 //     res.send('Welcome Traders')
@@ -62,5 +63,9 @@ router.post('/customer_bills', billPrintController.getBillPrints);
 
 // statement apis
 router.post('/statement', billPrintController.customerStatement);
+
+// Collection Report
+router.post('/collection_report', collectionReportController.createCollectionReport);
+router.post('/collection_reports', collectionReportController.getCollectionReports);
 
 module.exports = router;
