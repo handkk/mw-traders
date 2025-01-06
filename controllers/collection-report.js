@@ -1,6 +1,7 @@
 'use strict';
 var userModel = require('../models/user.model');
 var collectionReportModel = require('../models/collection-report.model');
+var collectionModel = require('../models/collection.model');
 
 // Create Collection record
 exports.createCollectionReport = (req, res) => {
@@ -22,6 +23,22 @@ exports.createCollectionReport = (req, res) => {
             if (user) {
                 collectionReportModel.findOne({ 'date': req.body.date, 'created_by': req.body.username }).then(report => {
                     if (!report) {
+                        // Find the collections Amount by User Start
+                        var query = collectionModel.find({ 'collected_user_id': userreq.userId, 'collection_date': req.body.collection_date });
+                        query.exec().then(collectionsData => {
+                            let collectedAmount = 0;
+                            collectionsData.forEach(collection => {
+                                collectedAmount = collectedAmount + collection.amount;
+                            })
+                            // req.body.amount
+                            res.send({'collectedAmount': collectedAmount});
+                        })
+                        .catch(err => {
+                            res.status(500).send({
+                                message: err.message || 'Not able to fetch the collections'
+                            })
+                        })
+                        
                         const collection_report = new collectionReportModel({
                             date: req.body.date,
                             reason_type: req.body.reason_type,

@@ -257,3 +257,42 @@ exports.getRecentCollections = (customer_id) => {
         return [];
     })
 }
+
+// Get Collection Amount By user
+exports.getCollectionAmountByUser = (req, res) => {
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
+    }
+    const userreq = {
+        'userId': req.body.userId,
+        'sessionId': req.body.sessionId
+    }
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            var query = collectionModel.find({ 'collected_user_id': userreq.userId, 'collection_date': req.body.collection_date });
+            query.exec().then(collectionsData => {
+                let collectedAmount = 0;
+                collectionsData.forEach(collection => {
+                    collectedAmount = collectedAmount + collection.amount;
+                })
+                res.send({'collectedAmount': collectedAmount});
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Not able to fetch the collections'
+                })
+            })
+        } else {
+            res.status(500).send({
+                success: false,
+                code: 1000,
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'Not able to fetch the collections'
+        })
+    })
+}
