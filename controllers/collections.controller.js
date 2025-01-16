@@ -296,3 +296,67 @@ exports.getCollectionAmountByUser = (req, res) => {
         })
     })
 }
+
+function getUniqueListBy(arr, key) {
+    return [...new Map(arr.map(item => [item[key], item])).values()]
+}
+
+// Get Collections by User
+exports.getCollectionsByUser = (req, res) => {
+    if (req.body && (!req.body.userId && !req.body.sessionId)) {
+        return res.status(400).send({message: 'userid & sessionid is required'});
+    }
+    const userreq = {
+        'userId': req.body.userId,
+        'sessionId': req.body.sessionId
+    }
+    userModel.findOne(userreq).then(user => {
+        if (user) {
+            let finalQuery = {};
+            if (req.body.user_id) {
+                finalQuery['collected_user_id'] = req.body.user_id;
+            }
+            if (req.body.collection_date) {
+                finalQuery['collection_date'] = req.body.collection_date;
+            }
+            var query = collectionModel.find(finalQuery);
+            query.exec().then(collectionsData => {
+                let users = [];
+                collectionsData.forEach(c => {
+                    users.push({
+                        collected_user_name: c.collected_user_name,
+                        collected_user_id: c.collected_user_id,
+                        collected_name: c.collected_name,
+                        collections: [],
+                        collectedAmount: 0
+                    })
+                });
+                let uniqueusers = getUniqueListBy(users, 'collected_user_name');
+                collectionsData.forEach(c => {
+                    const findIndex = uniqueusers.findIndex(uc => uc.collected_user_name === c.collected_user_name);
+                    if (findIndex !== -1) {
+                        uniqueusers[findIndex].collections.push(c)
+                        uniqueusers[findIndex].collectedAmount = uniqueusers[findIndex].collectedAmount + c.amount;
+                    }
+                });
+                res.send(uniqueusers);
+            })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Not able to fetch the collections'
+                })
+            })
+        } else {
+            res.status(500).send({
+                success: false,
+                code: 1000,
+                message: 'User session ended, Please login again'
+            })
+        }
+    })
+    .catch(err => {
+        res.status(500).send({
+            message: err.message || 'Not able to fetch the collections'
+        })
+    })
+}

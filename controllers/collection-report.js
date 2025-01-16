@@ -24,41 +24,48 @@ exports.createCollectionReport = (req, res) => {
                 collectionReportModel.findOne({ 'date': req.body.date, 'created_by': req.body.username }).then(report => {
                     if (!report) {
                         // Find the collections Amount by User Start
-                        var query = collectionModel.find({ 'collected_user_id': userreq.userId, 'collection_date': req.body.collection_date });
-                        query.exec().then(collectionsData => {
+                        collectionModel.find({ 'collected_user_id': userreq.userId, 'collection_date': req.body.date })
+                        .then(collectionsData => {
                             let collectedAmount = 0;
                             collectionsData.forEach(collection => {
                                 collectedAmount = collectedAmount + collection.amount;
                             })
-                            // req.body.amount
-                            res.send({'collectedAmount': collectedAmount});
+                            if (collectedAmount > 0 && collectedAmount === req.body.amount && req.body.spent_amount === 0) {
+                                const save_data = {
+                                    date: req.body.date,
+                                    farmer_id: req.body.farmer_id ? req.body.farmer_id : '',
+                                    amount: req.body.amount,
+                                    spent_reasons: req.body.spent_reasons ? req.body.spent_reasons : [],
+                                    notes: req.body.notes,
+                                    created_by: req.body.created_by,
+                                    created_name: user.name,
+                                    created_at: new Date(),
+                                    modified_at: new Date()
+                                };
+                                const reportData = new collectionReportModel(save_data);
+                                reportData.save(reportData)
+                                .then(new_collection_report => {
+                                    res.status(200).send({
+                                        statusCode: 200,
+                                        message: 'Collection Submitted Successfully'
+                                    })
+                                })
+                                .catch(err => {
+                                    res.status(500).send({
+                                        message: err.message || 'Not able to save collection report'
+                                    })
+                                })
+                            }
+                            if (collectedAmount > 0 && collectedAmount !== req.body.amount && req.body.spent_amount === 0) {
+                                res.status(403).send({
+                                    statusCode: 403,
+                                    message: 'Entered amount is not matching with today collection amount'
+                                })
+                            }
                         })
                         .catch(err => {
                             res.status(500).send({
                                 message: err.message || 'Not able to fetch the collections'
-                            })
-                        })
-                        
-                        const collection_report = new collectionReportModel({
-                            date: req.body.date,
-                            reason_type: req.body.reason_type,
-                            farmer_id: req.body.farmer_id ? req.body.farmer_id : '',
-                            amount: req.body.amount,
-                            spent_amount: req.body.spent_amount,
-                            notes: req.body.notes,
-                            created_by: req.body.created_by,
-                            created_name: user.name,
-                            created_at: new Date(),
-                            modified_at: new Date()
-                        });
-                        collection_report.save().then(new_collection_report => {
-                            res.status(200).send({
-                                message: 'Collection Submitted Successfully'
-                            })
-                        })
-                        .catch(err => {
-                            res.status(500).send({
-                                message: err.message || 'Not able to save collection report'
                             })
                         })
                     } else {
@@ -107,8 +114,11 @@ exports.getCollectionReports = (req, res) => {
             const limit = req.body.limit ? req.body.limit : 10000;
             const skip = req.body.skip ? (req.body.skip - 1) : 0;
             let dateQuery = {};
-            if (req.body.bill_date) {
-                dateQuery['bill_date'] = req.body.bill_date;
+            if (req.body.date) {
+                dateQuery['date'] = req.body.date;
+            }
+            if (req.body.username) {
+                dateQuery['created_by'] = req.body.username;
             }
             var query = collectionReportModel.find(dateQuery).sort({ 'modified_at': -1 }).skip(skip * limit).limit(limit);
                 query.exec().then(reportsData => {

@@ -5,10 +5,6 @@ var collection_report = new mongoose.Schema({
         type: String,
         required: true
     },
-    reason_type: {
-        type: String,
-        default: ''
-    },
     farmer_id: {
         type: String,
         default: ''
@@ -18,9 +14,9 @@ var collection_report = new mongoose.Schema({
         default: 0,
         required: true
     },
-    spent_amount: {
-        type: Number,
-        default: 0
+    spent_reasons: {
+        type: Array,
+        default: []
     },
     notes: {
         type: String,
@@ -40,6 +36,10 @@ var collection_report = new mongoose.Schema({
         type: String,
         required: true,
         default: ''
+    },
+    report_approved: {
+        type: Boolean,
+        default: false
     }
 });
 

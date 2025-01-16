@@ -68,6 +68,7 @@ router.post('/statement', billPrintController.customerStatement);
 router.post('/collection_report', collectionReportController.createCollectionReport);
 router.post('/collection_reports', collectionReportController.getCollectionReports);
 router.post('/getCollectionAmountByUser', collectionController.getCollectionAmountByUser);
+router.post('/getCollectionsByUser', collectionController.getCollectionsByUser);
 
 
 module.exports = router;
