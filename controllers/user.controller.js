@@ -5,6 +5,7 @@ const CryptoJS = require("crypto-js");
 
 // Get Users
 exports.getUsers = (req, res) => {
+    console.log(`getUsers process.env.MONGODB_URI: ${process.env.MONGODB_URI}`);
     const limit = req.body.limit ? req.body.limit : 1000;
     const skip = req.body.skip ? (req.body.skip - 1) : 0;
     const user_id = req.body.userId;
