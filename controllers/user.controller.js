@@ -72,6 +72,8 @@ exports.createUser = (req, res) => {
                 } else {
                     const uuid = uuidv4();
                     req.body['userId'] = uuid;
+                    req.body['created_at'] = new Date();
+                    req.body['modified_at'] = new Date();
                     // const pwd = req.body['password'];
                     // req.body['password'] = encrypt(pwd);
                     const user = new userModel(req.body);
