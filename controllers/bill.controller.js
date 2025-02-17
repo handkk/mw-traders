@@ -15,7 +15,7 @@ exports.getBills = (req, res) => {
         return res.status(400).send({ message: 'Data to update can not be empty' });
     }
     if (req.body && (!req.body.userId && !req.body.sessionId)) {
-        return res.status(400).send({message: 'userid & sessionid is required'});
+        return res.status(400).send({ message: 'userid & sessionid is required' });
     }
     const userreq = {
         'userId': req.body.userId,
@@ -70,7 +70,7 @@ exports.createBill = (req, res) => {
         return res.status(400).send({ message: 'Data to update can not be empty' });
     }
     if (req.body && (!req.body.userId && !req.body.sessionId)) {
-        return res.status(400).send({message: 'userid & sessionid is required'});
+        return res.status(400).send({ message: 'userid & sessionid is required' });
     }
     const name = req.body.name;
     const userreq = {
@@ -79,221 +79,172 @@ exports.createBill = (req, res) => {
     }
     userModel.findOne(userreq).then(user => {
         if (user) {
-            vegetableModel.findOne({
-                '_id': req.body.vegetable_id, 'name': req.body.vegetable_name
-            }).then(vegetableData => {
-                if (vegetableData) {
-                    farmerModel.findOne({
-                        'name': req.body.farmer_name, '_id': req.body.farmer_id
-                    })
-                        .then(farmerData => {
-                            if (farmerData) {
-                                customerModel.findOne({
-                                    'name': req.body.customer_name, '_id': req.body.customer_id
-                                })
-                                    .then(customerData => {
-                                        if (customerData) {
-                                            // let billdata = {
-                                            //     'customer_name': req.body.customer_name,
-                                            //     'customer_id': req.body.customer_id,
-                                            //     'farmer_name': req.body.farmer_name,
-                                            //     'farmer_id': req.body.farmer_id,
-                                            //     'vegetable_id': req.body.vegetable_id,
-                                            //     'vegetable_name': req.body.vegetable_name
-                                            // };
+            customerModel.findOne({
+                'name': req.body.customer_name, '_id': req.body.customer_id
+            })
+                .then(customerData => {
+                    if (customerData) {
+                        if (!req.body.unit_wise) {
+                            req.body['total_amount'] = (req.body.rate / 10) * req.body.quantity;
+                        } else if (req.body.unit_wise) {
+                            req.body['total_amount'] = req.body.rate * req.body.quantity;
+                        }
+                        let customer_balance_amount = customerData['balance_amount'] + req.body['total_amount'];
+                        req.body['created_at'] = new Date();
+                        req.body['modified_at'] = new Date();
+                        req.body['created_by'] = user.username;
+                        req.body['balance_amount'] = customer_balance_amount;
+                        const bill = new billModel(req.body);
+                        bill.save(bill)
+                            .then(async newbilldata => {
+                                customerData['balance_amount'] = customer_balance_amount;
+                                res.send(newbilldata);
+                                let farmerBill = await farmerBillModel.findOne({ 'farmer_id': req.body.farmer_id, 'date': req.body['bill_date'] });
+                                if (farmerBill) {
+                                    let updateFarmer = farmerBill;
+                                    const vegetableInd = updateFarmer.vegetables.findIndex(veg => (veg.name === req.body.vegetable_name && veg.rate === req.body.rate));
+                                    if (vegetableInd !== -1) {
+                                        const rate = updateFarmer.vegetables[vegetableInd].rate;
+                                        const quantity = updateFarmer.vegetables[vegetableInd].quantity;
+                                        const amount = updateFarmer.vegetables[vegetableInd].amount;
+                                        updateFarmer.vegetables.splice(vegetableInd, 1);
+                                        if (updateFarmer.vegetables.length > 0) {
+                                            updateFarmer.vegetables.push({
+                                                'name': req.body.vegetable_name,
+                                                'id': req.body.vegetable_id,
+                                                'rate': req.body.rate,
+                                                'quantity': quantity + req.body.quantity,
+                                                'amount': amount + req.body['total_amount'],
+                                                'date': req.body['bill_date'],
+                                                'created_by': user.username
+                                            })
+                                        } else {
+                                            updateFarmer.vegetables.push({
+                                                'name': req.body.vegetable_name,
+                                                'id': req.body.vegetable_id,
+                                                'rate': req.body.rate,
+                                                'quantity': quantity + req.body.quantity,
+                                                'amount': amount + req.body['total_amount'],
+                                                'date': req.body['bill_date'],
+                                                'created_by': user.username
+                                            })
+                                        }
+                                    } else {
+                                        updateFarmer.vegetables.push({
+                                            'name': req.body.vegetable_name,
+                                            'id': req.body.vegetable_id,
+                                            'rate': req.body.rate,
+                                            'quantity': req.body.quantity,
+                                            'amount': req.body['total_amount'],
+                                            'date': req.body['bill_date'],
+                                            'created_by': user.username
+                                        })
+                                    }
+                                    let farmerBillUpdate = await farmerBillModel.findOneAndUpdate({ 'farmer_id': req.body.farmer_id, 'date': req.body['bill_date'] }, {
+                                        'balance': updateFarmer.balance + req.body['total_amount'],
+                                        'balance_amount': updateFarmer.balance_amount + req.body['total_amount'],
+                                        'vegetables': updateFarmer.vegetables,
+                                        'modified_at': new Date()
+                                    }, { returnDocument: "after" });
+                                    if (farmerBillUpdate) {
+                                        // console.log('\n farmerBillUpdate updated');
+                                    } else {
+                                        // console.log('\n farmerBillUpdate not updated');
+                                    }
+                                } else {
+                                    const vegetable = {
+                                        'name': req.body.vegetable_name,
+                                        'id': req.body.vegetable_id,
+                                        'rate': req.body.rate,
+                                        'quantity': req.body.quantity,
+                                        'amount': req.body['total_amount'],
+                                        'date': req.body['bill_date'],
+                                        'created_by': user.username
+                                    }
+                                    const farmerBody = {
+                                        'farmer_id': req.body.farmer_id,
+                                        'farmer_name': req.body.farmer_name,
+                                        'date': req.body['bill_date'],
+                                        'balance': req.body['total_amount'],
+                                        'vegetables': [vegetable],
+                                        'created_by': user.username,
+                                        'balance_amount': req.body['total_amount'],
+                                        'created_at': new Date(),
+                                        'modified_at': new Date()
+                                    };
+                                    let farmerBillInsert = await farmerBillModel.create(farmerBody);
+                                    if (farmerBillInsert) {
+                                        // console.log('\n farmerBillInsert ', farmerBillInsert);
+                                    } else {
+                                        // console.log('\n farmerBillInsert faile ', farmerBillInsert);
+                                    }
+                                }
 
-                                            if (!req.body.unit_wise) {
-                                                req.body['total_amount'] = (req.body.rate / 10) * req.body.quantity;
-                                            } else if (req.body.unit_wise) {
-                                                req.body['total_amount'] = req.body.rate * req.body.quantity;
-                                            }
-                                            let customer_balance_amount = customerData['balance_amount'] + req.body['total_amount'];
-                                            req.body['created_at'] = new Date();
-                                            req.body['modified_at'] = new Date();
-                                            req.body['created_by'] = user.username;
-                                            req.body['balance_amount'] = customer_balance_amount;
-                                            const bill = new billModel(req.body);
-                                            bill.save(bill)
-                                                .then(async newbilldata => {
-                                                    // const existingCollection = customerData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
-                                                    customerData['balance_amount'] = customer_balance_amount;
-                                                    // if (existingCollection) {
-                                                    //     existingCollection.records.push({ ...req.body, billId: newbilldata['_id'] });
-                                                    // } else {
-                                                        // Create a new collection with the provided bill date
-                                                        // customerData.customerCollection.push({
-                                                        //     bill_date: req.body['bill_date'],
-                                                        //     customer_name: req.body.customer_name,
-                                                        //     customer_id: req.body.customer_id,
-                                                        //     phone_number: customerData.phone_number,
-                                                        //     records: [{ ...req.body, billId: newbilldata['_id'] }],
-                                                        // });
-                                                    // }
-                                                    let farmerBill = await farmerBillModel.findOne({ 'farmer_id': req.body.farmer_id, 'date': req.body['bill_date'] });
-                                                    if (farmerBill) {
-                                                        let updateFarmer = farmerBill;
-                                                        const vegetableInd = updateFarmer.vegetables.findIndex(veg => (veg.name === req.body.vegetable_name && veg.rate === req.body.rate));
-                                                        if (vegetableInd !== -1) {
-                                                            const rate = updateFarmer.vegetables[vegetableInd].rate;
-                                                            const quantity = updateFarmer.vegetables[vegetableInd].quantity;
-                                                            const amount = updateFarmer.vegetables[vegetableInd].amount;
-                                                            updateFarmer.vegetables.splice(vegetableInd, 1);
-                                                            if (updateFarmer.vegetables.length > 0) {
-                                                                updateFarmer.vegetables.push({
-                                                                    'name': req.body.vegetable_name,
-                                                                    'id': req.body.vegetable_id,
-                                                                    'rate': req.body.rate,
-                                                                    'quantity': quantity + req.body.quantity,
-                                                                    'amount': amount + req.body['total_amount'],
-                                                                    'date': req.body['bill_date'],
-                                                                    'created_by': user.username
-                                                                })
-                                                            } else {
-                                                                updateFarmer.vegetables.push({
-                                                                    'name': req.body.vegetable_name,
-                                                                    'id': req.body.vegetable_id,
-                                                                    'rate': req.body.rate,
-                                                                    'quantity': quantity + req.body.quantity,
-                                                                    'amount': amount + req.body['total_amount'],
-                                                                    'date': req.body['bill_date'],
-                                                                    'created_by': user.username
-                                                                })
-                                                            }
-                                                        } else {
-                                                            updateFarmer.vegetables.push({
-                                                                'name': req.body.vegetable_name,
-                                                                'id': req.body.vegetable_id,
-                                                                'rate': req.body.rate,
-                                                                'quantity': req.body.quantity,
-                                                                'amount': req.body['total_amount'],
-                                                                'date': req.body['bill_date'],
-                                                                'created_by': user.username
-                                                            })
-                                                        }
-                                                        let farmerBillUpdate = await farmerBillModel.findOneAndUpdate({'farmer_id': req.body.farmer_id, 'date': req.body['bill_date']}, {
-                                                            'balance': updateFarmer.balance + req.body['total_amount'],
-                                                            'balance_amount': updateFarmer.balance_amount + req.body['total_amount'],
-                                                            'vegetables': updateFarmer.vegetables,
-                                                            'modified_at': new Date()
-                                                        }, { returnDocument: "after" });
-                                                        if (farmerBillUpdate) {
-                                                            // console.log('\n farmerBillUpdate updated');
-                                                        } else {
-                                                            // console.log('\n farmerBillUpdate not updated');
-                                                        }
-                                                    } else {
-                                                        const vegetable = {
-                                                            'name': req.body.vegetable_name,
-                                                            'id': req.body.vegetable_id,
-                                                            'rate': req.body.rate,
-                                                            'quantity': req.body.quantity,
-                                                            'amount': req.body['total_amount'],
-                                                            'date': req.body['bill_date'],
-                                                            'created_by': user.username
-                                                        }
-                                                        const farmerBody = {
-                                                            'farmer_id': req.body.farmer_id,
-                                                            'farmer_name': req.body.farmer_name,
-                                                            'date': req.body['bill_date'],
-                                                            'balance': req.body['total_amount'],
-                                                            'vegetables': [vegetable],
-                                                            'created_by': user.username,
-                                                            'balance_amount': req.body['total_amount'],
-                                                            'created_at': new Date(),
-                                                            'modified_at': new Date()
-                                                        };
-                                                        let farmerBillInsert = await farmerBillModel.create(farmerBody);
-                                                        if (farmerBillInsert) {
-                                                            // console.log('\n farmerBillInsert ', farmerBillInsert);
-                                                        } else {
-                                                            // console.log('\n farmerBillInsert faile ', farmerBillInsert);
-                                                        }
+
+                                customerModel.findOneAndUpdate({ '_id': req.body.customer_id }, { ...customerData }, { returnDocument: "after" })
+                                    .then(cus => {
+                                        billPrintModel.findOne({ 'bill_date': req.body['bill_date'], 'customer_id': req.body.customer_id })
+                                            .then(bill_print => {
+                                                if (!bill_print) {
+                                                    const billPrintBody = {
+                                                        'bill_date': req.body['bill_date'],
+                                                        'customer_id': req.body.customer_id,
+                                                        'name': req.body.customer_name,
+                                                        'phone_number': customerData.phone_number,
+                                                        'items': [{ ...req.body, billId: newbilldata['_id'] }],
+                                                        'created_by': user.username,
+                                                        'created_at': new Date(),
+                                                        'modified_at': new Date(),
+                                                        'balance_amount': req.body['balance_amount'],
+                                                        'bill_amount': req.body['total_amount']
                                                     }
-                                                    
-
-                                                    customerModel.findOneAndUpdate({ '_id': req.body.customer_id }, { ...customerData }, { returnDocument: "after" })
-                                                        .then(cus => {
-                                                            billPrintModel.findOne({ 'bill_date': req.body['bill_date'], 'customer_id': req.body.customer_id })
-                                                            .then(bill_print => {
-                                                                if (!bill_print) {
-                                                                    const billPrintBody = {
-                                                                        'bill_date': req.body['bill_date'],
-                                                                        'customer_id': req.body.customer_id,
-                                                                        'name': req.body.customer_name,
-                                                                        'phone_number': customerData.phone_number,
-                                                                        'items': [{...req.body, billId: newbilldata['_id']}],
-                                                                        'created_by': user.username,
-                                                                        'created_at': new Date(),
-                                                                        'modified_at': new Date(),
-                                                                        'balance_amount': req.body['balance_amount'],
-                                                                        'bill_amount': req.body['total_amount']
-                                                                    }
-                                                                    const billPrint = new billPrintModel(billPrintBody);
-                                                                    billPrint.save(billPrint).then(billprint => {
-                                                                        res.send(newbilldata);
-                                                                    })
-                                                                    .catch(err => {
-                                                                        res.status(500).send({
-                                                                            message: err.message || 'Save operation is not occured'
-                                                                        });
-                                                                    })
-                                                                } else {
-                                                                    req.body['billId'] = newbilldata['_id'];
-                                                                    bill_print['items'].push({...req.body})
-                                                                    bill_print['modified_at'] = new Date()
-                                                                    bill_print['balance_amount'] = bill_print['balance_amount'] + req.body['total_amount']
-                                                                    bill_print['bill_amount'] = bill_print['bill_amount'] + req.body['total_amount'];
-                                                                    billPrintModel.findOneAndUpdate({ '_id': bill_print._id }, {...bill_print}, { returnDocument: "after" })
-                                                                    .then(bill_print_updated => {
-                                                                        res.send(newbilldata);
-                                                                    })
-                                                                    .catch(err => {
-                                                                        res.status(500).send({
-                                                                            message: err.message || 'Save operation is not occured'
-                                                                        });
-                                                                    })
-                                                                }
-                                                            })
-                                                            .catch(err => {
-                                                                res.status(500).send({
-                                                                    message: err.message || 'Save operation is not occured'
-                                                                });
-                                                            })
+                                                    const billPrint = new billPrintModel(billPrintBody);
+                                                    billPrint.save(billPrint).then(billprint => {
+                                                        // res.send(newbilldata);
+                                                    })
+                                                        .catch(err => {
+                                                            res.status(500).send({
+                                                                message: err.message || 'Save operation is not occured'
+                                                            });
+                                                        })
+                                                } else {
+                                                    req.body['billId'] = newbilldata['_id'];
+                                                    bill_print['items'].push({ ...req.body })
+                                                    bill_print['modified_at'] = new Date()
+                                                    bill_print['balance_amount'] = bill_print['balance_amount'] + req.body['total_amount']
+                                                    bill_print['bill_amount'] = bill_print['bill_amount'] + req.body['total_amount'];
+                                                    billPrintModel.findOneAndUpdate({ '_id': bill_print._id }, { ...bill_print }, { returnDocument: "after" })
+                                                        .then(bill_print_updated => {
+                                                            // res.send(newbilldata);
                                                         })
                                                         .catch(err => {
                                                             res.status(500).send({
                                                                 message: err.message || 'Save operation is not occured'
                                                             });
                                                         })
-                                                })
-                                                .catch(err => {
-                                                    res.status(500).send({
-                                                        message: err.message || 'Save operation is not occured'
-                                                    });
-                                                })
-                                        } else {
-                                            res.status(403).send({ message: `Customer details not found` });
-                                        }
+                                                }
+                                            })
+                                            .catch(err => {
+                                                res.status(500).send({
+                                                    message: err.message || 'Save operation is not occured'
+                                                });
+                                            })
                                     })
                                     .catch(err => {
                                         res.status(500).send({
                                             message: err.message || 'Save operation is not occured'
                                         });
                                     })
-
-                            } else {
-                                res.status(403).send({ message: `Farmer details not found` })
-                            }
-                        })
-                        .catch(err => {
-                            res.status(500).send({
-                                message: err.message || 'Save operation is not occured'
-                            });
-                        })
-                } else {
-                    res.status(403).send({ message: `Vegetable details not found` })
-                }
-            })
+                            })
+                            .catch(err => {
+                                res.status(500).send({
+                                    message: err.message || 'Save operation is not occured'
+                                });
+                            })
+                    } else {
+                        res.status(403).send({ message: `Customer details not found` });
+                    }
+                })
                 .catch(err => {
                     res.status(500).send({
                         message: err.message || 'Save operation is not occured'
@@ -322,7 +273,7 @@ exports.deleteBill = (req, res) => {
         return res.status(400).send({ message: 'Data to update can not be empty' });
     }
     if (req.body && (!req.body.userId && !req.body.sessionId)) {
-        return res.status(400).send({message: 'userid & sessionid is required'});
+        return res.status(400).send({ message: 'userid & sessionid is required' });
     }
     const userid = req.body.userId;
     const sessionId = req.body.sessionId;
@@ -350,80 +301,80 @@ exports.deleteBill = (req, res) => {
                             customerModel.findOneAndUpdate({ '_id': customerId }, { ...customer_bills }, { returnDocument: "after" })
                                 .then(cus => {
                                     billPrintModel.findOne({ 'bill_date': bill_date, 'customer_id': customerId })
-                                    .then(async billprint => {
-                                        let new_bill_print = billprint;
-                                        let existingCollectionsIndex;
-                                        existingCollectionsIndex = new_bill_print.items.findIndex(item => item.billId === id);
-                                        new_bill_print.items.splice(existingCollectionsIndex, 1);
-                                        let farmerBill_delete = await farmerBillModel.findOne({ 'farmer_id': data.farmer_id, 'date': data['bill_date'] });
-                                        if (farmerBill_delete) {
-                                            let updateFarmer_del = farmerBill_delete;
-                                            const vegetableInd = updateFarmer_del.vegetables.findIndex(veg => (veg.name === data.vegetable_name && veg.rate === data.rate));
-                                            if (vegetableInd !== -1) {
-                                                const quantity = updateFarmer_del.vegetables[vegetableInd].quantity - data.quantity;
-                                                const amount = updateFarmer_del.vegetables[vegetableInd].amount - data.total_amount;
-                                                if (quantity > 0) {
-                                                    updateFarmer_del.vegetables[vegetableInd].quantity = quantity;
-                                                    updateFarmer_del.vegetables[vegetableInd].amount = amount;
-                                                } else if (quantity === 0) {
-                                                    updateFarmer_del.vegetables.splice(vegetableInd, 1);
-                                                }
-                                                let farmerBillUpdate = await farmerBillModel.findOneAndUpdate({'farmer_id': data.farmer_id, 'date': data['bill_date']}, {
-                                                    'balance': updateFarmer_del.balance - data['total_amount'],
-                                                    'balance_amount': updateFarmer_del.balance_amount - data['total_amount'],
-                                                    'vegetables': updateFarmer_del.vegetables,
-                                                    'modified_at': new Date()
-                                                }, { returnDocument: "after" });
-                                                if (farmerBillUpdate) {
-                                                    // console.log('\n farmerBillUpdate updated');
-                                                } else {
-                                                    // console.log('\n farmerBillUpdate not updated');
+                                        .then(async billprint => {
+                                            let new_bill_print = billprint;
+                                            let existingCollectionsIndex;
+                                            existingCollectionsIndex = new_bill_print.items.findIndex(item => item.billId === id);
+                                            new_bill_print.items.splice(existingCollectionsIndex, 1);
+                                            let farmerBill_delete = await farmerBillModel.findOne({ 'farmer_id': data.farmer_id, 'date': data['bill_date'] });
+                                            if (farmerBill_delete) {
+                                                let updateFarmer_del = farmerBill_delete;
+                                                const vegetableInd = updateFarmer_del.vegetables.findIndex(veg => (veg.name === data.vegetable_name && veg.rate === data.rate));
+                                                if (vegetableInd !== -1) {
+                                                    const quantity = updateFarmer_del.vegetables[vegetableInd].quantity - data.quantity;
+                                                    const amount = updateFarmer_del.vegetables[vegetableInd].amount - data.total_amount;
+                                                    if (quantity > 0) {
+                                                        updateFarmer_del.vegetables[vegetableInd].quantity = quantity;
+                                                        updateFarmer_del.vegetables[vegetableInd].amount = amount;
+                                                    } else if (quantity === 0) {
+                                                        updateFarmer_del.vegetables.splice(vegetableInd, 1);
+                                                    }
+                                                    let farmerBillUpdate = await farmerBillModel.findOneAndUpdate({ 'farmer_id': data.farmer_id, 'date': data['bill_date'] }, {
+                                                        'balance': updateFarmer_del.balance - data['total_amount'],
+                                                        'balance_amount': updateFarmer_del.balance_amount - data['total_amount'],
+                                                        'vegetables': updateFarmer_del.vegetables,
+                                                        'modified_at': new Date()
+                                                    }, { returnDocument: "after" });
+                                                    if (farmerBillUpdate) {
+                                                        // console.log('\n farmerBillUpdate updated');
+                                                    } else {
+                                                        // console.log('\n farmerBillUpdate not updated');
+                                                    }
                                                 }
                                             }
-                                        }
-                                        if (new_bill_print.items && new_bill_print.items.length > 0) {
-                                            new_bill_print['bill_amount'] = new_bill_print['bill_amount'] - data.total_amount;
-                                            billPrintModel.findOneAndUpdate({ 'bill_date': bill_date, 'customer_id': customerId }, {...new_bill_print}, { returnDocument: "after" }).then(update_billprint => {
-                                                
-                                                // Delete Bill
-                                                billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
-                                                    res.send({ success: true, message: "Bill Deleted Successfully" });
+                                            if (new_bill_print.items && new_bill_print.items.length > 0) {
+                                                new_bill_print['bill_amount'] = new_bill_print['bill_amount'] - data.total_amount;
+                                                billPrintModel.findOneAndUpdate({ 'bill_date': bill_date, 'customer_id': customerId }, { ...new_bill_print }, { returnDocument: "after" }).then(update_billprint => {
+
+                                                    // Delete Bill
+                                                    billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
+                                                        res.send({ success: true, message: "Bill Deleted Successfully" });
+                                                    })
+                                                        .catch(err => {
+                                                            res.status(500).send({
+                                                                message: err.message || 'bill not removed'
+                                                            });
+                                                        })
                                                 })
-                                                .catch(err => {
+                                                    .catch(err => {
+                                                        res.status(500).send({
+                                                            message: err.message || 'bill print not updated'
+                                                        });
+                                                    })
+                                            } else if (new_bill_print.items && new_bill_print.items.length === 0) {
+                                                try {
+                                                    const delete_bill_print = await billPrintModel.findOneAndDelete({ 'bill_date': bill_date, 'customer_id': customerId })
+                                                    // Delete Bill
+                                                    billModel.findOneAndDelete({ '_id': id }).then(billRemoved => {
+                                                        res.send({ success: true, message: "Bill Deleted Successfully" });
+                                                    })
+                                                        .catch(err => {
+                                                            res.status(500).send({
+                                                                message: err.message || 'bill not removed'
+                                                            });
+                                                        })
+                                                } catch (e) {
                                                     res.status(500).send({
                                                         message: err.message || 'bill not removed'
-                                                    });
-                                                })
-                                            })
-                                            .catch(err => {
-                                                res.status(500).send({
-                                                    message: err.message || 'bill print not updated'
-                                                });
-                                            })
-                                        } else if (new_bill_print.items && new_bill_print.items.length === 0) {
-                                            try {
-                                                const delete_bill_print = await billPrintModel.findOneAndDelete({ 'bill_date': bill_date, 'customer_id': customerId })
-                                                // Delete Bill
-                                                billModel.findOneAndDelete({ '_id': id }).then(billRemoved => {
-                                                    res.send({ success: true, message: "Bill Deleted Successfully" });
-                                                })
-                                                .catch(err => {
-                                                    res.status(500).send({
-                                                        message: err.message || 'bill not removed'
-                                                    });
-                                                })
-                                            } catch (e) {
-                                                res.status(500).send({
-                                                    message: err.message || 'bill not removed'
-                                                })
+                                                    })
+                                                }
                                             }
-                                        }
-                                    })
-                                    .catch(err => {
-                                        res.status(500).send({
-                                            message: err.message || 'bill not found'
-                                        });
-                                    })
+                                        })
+                                        .catch(err => {
+                                            res.status(500).send({
+                                                message: err.message || 'bill not found'
+                                            });
+                                        })
                                 })
                                 .catch(err => {
                                     res.status(500).send({
@@ -431,11 +382,11 @@ exports.deleteBill = (req, res) => {
                                     });
                                 })
                         })
-                        .catch(err => {
-                            res.status(500).send({
-                                message: err.message || 'customer not found'
-                            });
-                        })
+                            .catch(err => {
+                                res.status(500).send({
+                                    message: err.message || 'customer not found'
+                                });
+                            })
                     }
                 })
                 .catch(err => {
@@ -472,30 +423,30 @@ function onReturnRecords(customerData) {
 
 function onFindIndexByBIllId(customerData, billId, req, isDeleteRecord, updatedBillData) {
     let obj = {}
-   if(updatedBillData){
-    obj['bill_date'] = updatedBillData['bill_date']
-    obj['billId'] = billId
-    obj['customer_name'] = updatedBillData['customer_name']
-    obj['customer_id'] = updatedBillData['customer_id']
-    obj['vegetable_name'] = updatedBillData['vegetable_name']
-    obj['vegetable_id'] = updatedBillData['vegetable_id']
-    obj['rate'] = updatedBillData['rate']
-    obj['quantity'] = updatedBillData['quantity']
-    obj['farmer_name'] = updatedBillData['farmer_name']
-    obj['farmer_id'] = updatedBillData['farmer_id']
-    obj['unit_wise'] = updatedBillData['unit_wise']
-    obj['notes'] = updatedBillData['notes']
-    obj['total_amount'] = updatedBillData['total_amount']
-    obj['modified_at'] = updatedBillData['modified_at']
-    obj['userId'] = req.body['userId']
-    obj['created_at'] =updatedBillData['created_at']
-   }
+    if (updatedBillData) {
+        obj['bill_date'] = updatedBillData['bill_date']
+        obj['billId'] = billId
+        obj['customer_name'] = updatedBillData['customer_name']
+        obj['customer_id'] = updatedBillData['customer_id']
+        obj['vegetable_name'] = updatedBillData['vegetable_name']
+        obj['vegetable_id'] = updatedBillData['vegetable_id']
+        obj['rate'] = updatedBillData['rate']
+        obj['quantity'] = updatedBillData['quantity']
+        obj['farmer_name'] = updatedBillData['farmer_name']
+        obj['farmer_id'] = updatedBillData['farmer_id']
+        obj['unit_wise'] = updatedBillData['unit_wise']
+        obj['notes'] = updatedBillData['notes']
+        obj['total_amount'] = updatedBillData['total_amount']
+        obj['modified_at'] = updatedBillData['modified_at']
+        obj['userId'] = req.body['userId']
+        obj['created_at'] = updatedBillData['created_at']
+    }
     let editedData = lodash.cloneDeep(customerData)
     if (editedData.customerCollection && editedData.customerCollection.length > 0) {
         const existingCollection = editedData.customerCollection.find(collection => collection.bill_date === req.body['bill_date']);
         if (existingCollection) {
             let recordedIndex = existingCollection.records.findIndex((item) => item.billId == billId)
-          
+
             if (recordedIndex != -1) {
                 if (isDeleteRecord) {
                     existingCollection.records.splice(recordedIndex)
@@ -505,7 +456,7 @@ function onFindIndexByBIllId(customerData, billId, req, isDeleteRecord, updatedB
 
                 }
             } else {
-               
+
 
                 existingCollection.records.push(obj)
 
@@ -517,13 +468,13 @@ function onFindIndexByBIllId(customerData, billId, req, isDeleteRecord, updatedB
     }
     else {
         // customer changed ( changed customer doen'nt have any collection up to now)
-        let tmpList=[]
+        let tmpList = []
         tmpList.push(obj)
         editedData.customerCollection.push({
             bill_date: req.body['bill_date'],
             customer_name: req.body.customer_name,
             customer_id: req.body.customer_id,
-            records:tmpList,
+            records: tmpList,
         });
     }
 
@@ -535,7 +486,7 @@ exports.updateBill = (req, res) => {
         return res.status(400).send({ message: 'Data to update can not be empty' });
     }
     if (req.body && (!req.body.userId && !req.body.sessionId)) {
-        return res.status(400).send({message: 'userid & sessionid is required'});
+        return res.status(400).send({ message: 'userid & sessionid is required' });
     }
     const id = req.params.id;
     const userid = req.body.userId;
@@ -612,8 +563,8 @@ exports.updateBill = (req, res) => {
                                                                                     });
                                                                                 }
                                                                             })
-            
-            
+
+
                                                                         })
                                                                     } else {
                                                                         res.status(403).send({
@@ -624,7 +575,7 @@ exports.updateBill = (req, res) => {
 
 
                                                             })
-                                              
+
 
                                                         }
                                                         if (req.body['isCustEdited'] == false) {
@@ -695,11 +646,11 @@ exports.updateBill = (req, res) => {
                                                                             });
                                                                         }
                                                                     })
-                                                                    .catch(err => {
-                                                                        res.status(500).send({
-                                                                            message: err.message || 'Save operation is not occured'
-                                                                        });
-                                                                    })
+                                                                        .catch(err => {
+                                                                            res.status(500).send({
+                                                                                message: err.message || 'Save operation is not occured'
+                                                                            });
+                                                                        })
                                                                 } else {
                                                                     res.status(403).send({
                                                                         message: 'Customer not found'
