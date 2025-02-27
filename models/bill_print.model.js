@@ -39,6 +39,10 @@ var bill_print = new mongoose.Schema({
     balance_amount: {
         type: Number,
         default: 0
+    },
+    total_balance: {
+        type: Number,
+        default: 0
     }
 });
 

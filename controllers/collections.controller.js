@@ -73,17 +73,18 @@ exports.createCollection = (req, res) => {
             req.body['created_by'] = user.username;
             customerModel.findOne({'_id': collectiondata.customer_id}).then(customer_data => {
                 if (customer_data) {
-                    if (customer_data.balance_amount > 0) {
-                        req.body['customer_balance'] = customer_data.balance_amount - req.body.amount;
+                    if (customer_data.balance_amount > 0 || customer_data.last_amount_updated > 0) {
+                        let customer_pending_balance = customer_data.balance_amount + customer_data.last_amount_updated;
+                        req.body['customer_balance'] = customer_pending_balance - req.body.amount;
                         const collection = new collectionModel(req.body);
                         collection.save(collection)
                         .then(newbilldata => {
-                            const amount = customer_data.balance_amount - req.body.amount;
+                            const amount = customer_pending_balance - req.body.amount;
                             const collected_amount = customer_data.collected_amount + req.body.amount;
                             const update_amount = { 
                                 'balance_amount': amount,
                                 'collected_amount': collected_amount,
-                                'last_amount_updated': req.body.amount
+                                'last_amount_updated': 0
                             };
                             customerModel.updateOne({'_id': collectiondata.customer_id}, update_amount).then(updateddata => {
                                 if (updateddata) {
@@ -154,7 +155,7 @@ exports.deleteCollection = (req, res) => {
                     const balance_amount = customerData.balance_amount + collectionData.amount;
                     const update_amount = { 
                         'balance_amount': balance_amount,
-                        'last_amount_updated': collectionData.amount,
+                        'last_amount_updated': 0,
                         'modified_at': new Date(),
                         'collected_amount': customerData.collected_amount - collectionData.amount
                     };

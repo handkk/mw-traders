@@ -82,22 +82,31 @@ exports.createBill = (req, res) => {
             customerModel.findOne({
                 'name': req.body.customer_name, '_id': req.body.customer_id
             })
-                .then(customerData => {
+                .then(async customerData => {
                     if (customerData) {
                         if (!req.body.unit_wise) {
                             req.body['total_amount'] = (req.body.rate / 10) * req.body.quantity;
                         } else if (req.body.unit_wise) {
                             req.body['total_amount'] = req.body.rate * req.body.quantity;
                         }
-                        let customer_balance_amount = customerData['balance_amount'] + req.body['total_amount'];
+                        let customer_balance_amount = req.body['total_amount'];
                         req.body['created_at'] = new Date();
                         req.body['modified_at'] = new Date();
                         req.body['created_by'] = user.username;
-                        req.body['balance_amount'] = customer_balance_amount;
+                        const todayBillfound = await billModel.find({ 'bill_date': req.body['bill_date'] })
+                        let newbal;
+                        if (todayBillfound.length === 0 && customerData['last_amount_updated'] > 0) {
+                            newbal = customerData['balance_amount'] + customerData['last_amount_updated']
+                        }
                         const bill = new billModel(req.body);
                         bill.save(bill)
                             .then(async newbilldata => {
-                                customerData['balance_amount'] = customer_balance_amount;
+                                if (todayBillfound.length === 0 && newbal > 0) {
+                                    customerData['last_amount_updated'] = customer_balance_amount;
+                                    customerData['balance_amount'] = newbal;
+                                } else {
+                                    customerData['last_amount_updated'] = customerData['last_amount_updated'] + customer_balance_amount;
+                                }
                                 res.send(newbilldata);
                                 let farmerBill = await farmerBillModel.findOne({ 'farmer_id': req.body.farmer_id, 'date': req.body['bill_date'] });
                                 if (farmerBill) {
@@ -195,8 +204,9 @@ exports.createBill = (req, res) => {
                                                         'created_by': user.username,
                                                         'created_at': new Date(),
                                                         'modified_at': new Date(),
-                                                        'balance_amount': req.body['balance_amount'],
-                                                        'bill_amount': req.body['total_amount']
+                                                        'balance_amount': customerData['balance_amount'],
+                                                        'bill_amount': req.body['total_amount'],
+                                                        'total_balance': customerData['balance_amount'] + req.body['total_amount']
                                                     }
                                                     const billPrint = new billPrintModel(billPrintBody);
                                                     billPrint.save(billPrint).then(billprint => {
@@ -211,8 +221,9 @@ exports.createBill = (req, res) => {
                                                     req.body['billId'] = newbilldata['_id'];
                                                     bill_print['items'].push({ ...req.body })
                                                     bill_print['modified_at'] = new Date()
-                                                    bill_print['balance_amount'] = bill_print['balance_amount'] + req.body['total_amount']
+                                                    bill_print['balance_amount'] = bill_print['balance_amount']
                                                     bill_print['bill_amount'] = bill_print['bill_amount'] + req.body['total_amount'];
+                                                    bill_print['total_balance'] = bill_print['balance_amount'] + bill_print['bill_amount']
                                                     billPrintModel.findOneAndUpdate({ '_id': bill_print._id }, { ...bill_print }, { returnDocument: "after" })
                                                         .then(bill_print_updated => {
                                                             // res.send(newbilldata);
