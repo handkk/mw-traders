@@ -112,6 +112,7 @@ function maxRecordsCount(customerData) {
         secondData['name'] = dataObject.name;
         secondData['phone_number'] = dataObject.phone_number;
         secondData['balance_amount'] = dataObject.balance_amount;
+        secondData['total_balance'] = dataObject.total_balance;
         // secondData.total_bill = returnSum(secondData.items);
         // firstData.total_bill = returnSum(firstData.items);
         firstData.bill_amount = returnSum(firstData.items);
@@ -132,20 +133,20 @@ function maxRecordsCount(customerData) {
       return maxRecordsCount(filteredArray)
     } else {
         filteredArray.forEach((f, inde) => {
-            if ((inde) === 0) {
-                f['continue'] = 'Continue...';
-            } else if (inde === 1) {
-                f['second'] = '(ii)';
-            } else if (inde === 2) {
-                f['third'] = '(iii)';
-            } else if (inde === 3) {
-                f['end'] = 'End...';
-            }
+            // if ((inde) === 0) {
+            //     f['continue'] = 'Continue...';
+            // } else if (inde === 1) {
+            //     f['second'] = '(ii)';
+            // } else if (inde === 2) {
+            //     f['third'] = '(iii)';
+            // } else if (inde === 3) {
+            //     f['end'] = 'End...';
+            // }
         })
         finalArray = filteredArray;
     }
     return finalArray
-  }
+  } 
 
   function returnSum(customerData) {
     return customerData.reduce((count, item) => {
