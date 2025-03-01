@@ -59,11 +59,29 @@ exports.createCustomer = (req, res) => {
         'userId': req.body.userId,
         'sessionId': req.body.sessionId
     }
-    userModel.findOne(userreq).then(user => {
+    userModel.findOne(userreq).then(async user => {
         if (user) {
             req.body['created_at'] = new Date();
             req.body['modified_at'] = new Date();
             req.body['created_by'] = user.username;
+            try {
+                const customer_name = req.body.name ? req.body.name : '';
+                if (customer_name.trim() === '') {
+                    return res.status(500).send({
+                        message: `Customer name required`
+                    })
+                }
+                const exists_customer = await customerModel.find({name: customer_name});
+                if (exists_customer && exists_customer.length > 0) {
+                    return res.status(500).send({
+                        message: `${req.body.name} Customer already exists`
+                    })
+                }
+            } catch(e) {
+                return res.status(500).send({
+                    message: e.message || 'Error while creating customer'
+                });
+            }
             const customer = new customerModel(req.body);
             customer.save(customer)
                 .then(data => {
@@ -515,4 +533,20 @@ function getCollectionsByCustomer(customer_id) {
         .catch(err => {
             return [];
         })
+}
+
+exports.setBalancezero = (req, res) => {
+    const name = req.body.name;
+    customerModel.updateMany({balance_amount: 0, collected_amount: 0, last_amount_updated: 0, modified_at: new Date(), customerCollection: []})
+        // customerModel.findOneAndUpdate({'name': name}, {balance_amount: 0, collected_amount: 0, last_amount_updated: 0, modified_at: new Date(),
+        //     customerCollection: []
+        // }, { returnDocument: "after" })
+        .then(customersData => {
+            res.send(customersData);
+        })
+            .catch(err => {
+                res.status(500).send({
+                    message: err.message || 'Not able to update customer'
+                })
+            })
 }

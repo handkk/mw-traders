@@ -93,20 +93,28 @@ exports.createBill = (req, res) => {
                         req.body['created_at'] = new Date();
                         req.body['modified_at'] = new Date();
                         req.body['created_by'] = user.username;
-                        const todayBillfound = await billModel.find({ 'bill_date': req.body['bill_date'] })
-                        let newbal;
-                        if (todayBillfound.length === 0 && customerData['last_amount_updated'] > 0) {
-                            newbal = customerData['balance_amount'] + customerData['last_amount_updated']
+                        const sameItemBillfound = await billModel.find({ 'bill_date': req.body['bill_date'], 'customer_id': req.body.customer_id,
+                            'vegetable_id': req.body.vegetable_id
+                         })
+                        if (sameItemBillfound.length > 0) {
+                            return res.status(500).send({
+                                message: `${req.body.vegetable_name} item already added`
+                            });
+                        }
+                        const todayBillfound = await billModel.find({ 'bill_date': req.body['bill_date'], 'customer_id': req.body.customer_id })
+                        let newbal = 0;
+                        let last_amount_updated = customerData['last_amount_updated'];
+                        let balance_amount = customerData['balance_amount'];
+                        if (todayBillfound.length === 0 && last_amount_updated > 0) {
+                            newbal = balance_amount + last_amount_updated;
+                            customerData['last_amount_updated'] = item_amount;
+                            customerData['balance_amount'] = newbal;
+                        } else {
+                            customerData['last_amount_updated'] = last_amount_updated + item_amount;
                         }
                         const bill = new billModel(req.body);
                         bill.save(bill)
                             .then(async newbilldata => {
-                                if (todayBillfound.length === 0 && newbal > 0) {
-                                    customerData['last_amount_updated'] = item_amount;
-                                    customerData['balance_amount'] = newbal;
-                                } else {
-                                    customerData['last_amount_updated'] = customerData['last_amount_updated'] + item_amount;
-                                }
                                 res.send(newbilldata);
                                 let farmerBill = await farmerBillModel.findOne({ 'farmer_id': req.body.farmer_id, 'date': req.body['bill_date'] });
                                 if (farmerBill) {
@@ -198,15 +206,15 @@ exports.createBill = (req, res) => {
                                                     const billPrintBody = {
                                                         'bill_date': req.body['bill_date'],
                                                         'customer_id': req.body.customer_id,
-                                                        'name': req.body.customer_name,
-                                                        'phone_number': customerData.phone_number,
+                                                        'name': cus.name,
+                                                        'phone_number': cus.phone_number,
                                                         'items': [{ ...req.body, billId: newbilldata['_id'] }],
                                                         'created_by': user.username,
                                                         'created_at': new Date(),
                                                         'modified_at': new Date(),
-                                                        'balance_amount': customerData['balance_amount'],
+                                                        'balance_amount': cus.balance_amount,
                                                         'bill_amount': req.body['total_amount'],
-                                                        'total_balance': customerData['balance_amount'] + req.body['total_amount']
+                                                        'total_balance': cus.balance_amount + req.body['total_amount']
                                                     }
                                                     const billPrint = new billPrintModel(billPrintBody);
                                                     billPrint.save(billPrint).then(billprint => {

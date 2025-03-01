@@ -4,7 +4,8 @@ const mongoose = require('mongoose');
 var customer = new mongoose.Schema({
     name: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     phone_number: {
         type: Number,
@@ -35,10 +36,6 @@ var customer = new mongoose.Schema({
     },
     modified_at: {
         type: Date
-    },
-    customerCollection: {
-        type: Array,
-        default: []
     },
     created_by: {
         type: String,
