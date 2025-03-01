@@ -89,7 +89,7 @@ exports.createBill = (req, res) => {
                         } else if (req.body.unit_wise) {
                             req.body['total_amount'] = req.body.rate * req.body.quantity;
                         }
-                        let customer_balance_amount = req.body['total_amount'];
+                        let item_amount = req.body['total_amount'];
                         req.body['created_at'] = new Date();
                         req.body['modified_at'] = new Date();
                         req.body['created_by'] = user.username;
@@ -102,10 +102,10 @@ exports.createBill = (req, res) => {
                         bill.save(bill)
                             .then(async newbilldata => {
                                 if (todayBillfound.length === 0 && newbal > 0) {
-                                    customerData['last_amount_updated'] = customer_balance_amount;
+                                    customerData['last_amount_updated'] = item_amount;
                                     customerData['balance_amount'] = newbal;
                                 } else {
-                                    customerData['last_amount_updated'] = customerData['last_amount_updated'] + customer_balance_amount;
+                                    customerData['last_amount_updated'] = customerData['last_amount_updated'] + item_amount;
                                 }
                                 res.send(newbilldata);
                                 let farmerBill = await farmerBillModel.findOne({ 'farmer_id': req.body.farmer_id, 'date': req.body['bill_date'] });

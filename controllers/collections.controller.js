@@ -16,8 +16,12 @@ exports.getCollections = (req, res) => {
         if (user) {
             const limit = req.body.limit ? req.body.limit : 10000;
             const skip = req.body.skip ? (req.body.skip - 1) : 0;
+            let queryString = {};
+            // if (req.body.collection_date) {
+            //     queryString['collection_date'] = req.body.collection_date;
+            // }
             collectionModel.count().then(count => {
-                var query = collectionModel.find({}).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
+                var query = collectionModel.find(queryString).sort({'modified_at': -1}).skip(skip * limit).limit(limit);
                 query.exec().then(collectionsData => {
                     const result = {
                         'data': collectionsData,
