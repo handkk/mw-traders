@@ -306,9 +306,9 @@ exports.deleteBill = (req, res) => {
                         customerId = data.customer_id;
                         bill_date = data.bill_date;
                         customerModel.findOne({ '_id': customerId }).then(customer => {
-                            const deductableAmount = customer.balance_amount - data.total_amount;
+                            const deductableAmount = customer.last_amount_updated - data.total_amount;
                             let customer_bills = customer;
-                            customer_bills['balance_amount'] = deductableAmount;
+                            customer_bills['last_amount_updated'] = deductableAmount;
                             customerModel.findOneAndUpdate({ '_id': customerId }, { ...customer_bills }, { returnDocument: "after" })
                                 .then(cus => {
                                     billPrintModel.findOne({ 'bill_date': bill_date, 'customer_id': customerId })
