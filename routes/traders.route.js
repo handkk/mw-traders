@@ -70,5 +70,7 @@ router.post('/collection_reports', collectionReportController.getCollectionRepor
 router.post('/getCollectionAmountByUser', collectionController.getCollectionAmountByUser);
 router.post('/getCollectionsByUser', collectionController.getCollectionsByUser);
 
+router.post('/setBalancezero', customerController.setBalancezero);
+
 
 module.exports = router;
