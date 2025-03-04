@@ -93,14 +93,6 @@ exports.createBill = (req, res) => {
                         req.body['created_at'] = new Date();
                         req.body['modified_at'] = new Date();
                         req.body['created_by'] = user.username;
-                        const sameItemBillfound = await billModel.find({ 'bill_date': req.body['bill_date'], 'customer_id': req.body.customer_id,
-                            'vegetable_id': req.body.vegetable_id
-                         })
-                        if (sameItemBillfound.length > 0) {
-                            return res.status(500).send({
-                                message: `${req.body.vegetable_name} item already added`
-                            });
-                        }
                         const todayBillfound = await billModel.find({ 'bill_date': req.body['bill_date'], 'customer_id': req.body.customer_id })
                         let newbal = 0;
                         let last_amount_updated = customerData['last_amount_updated'];

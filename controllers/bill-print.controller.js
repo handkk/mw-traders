@@ -30,42 +30,17 @@ exports.getBillPrints = (req, res) => {
                 var query = billPrintModel.find(dateQuery);
                 query.exec().then(async billsData => {
                     let bills_data = billsData;
-                    let customerIds = [];
                     let billprintData = {
                         'bills': [],
                         'collections': []
                     };
-                    let lastcollection = [];
                     if (bills_data && bills_data.length > 0) {
-                        bills_data.forEach(async bill => {
-                            customerIds.push(bill.customer_id)
-                        });
-                        let customer_balance = await customerModel.find({ '_id': { $in: customerIds } });
-                        let col = await collectionModel.find({ 'customer_id': { $in: customerIds } }).sort({'modified_at': -1});
-    
-                        const processedBillsData = await maxRecordsCount(bills_data);
+                        const processedBillsData = await processBills(bills_data);
                         billprintData['bills'] = processedBillsData;
-                        await billprintData.bills.forEach(bills => {
-                            bills.collectionData = [];
-                            if (customer_balance && customer_balance.length > 0) {
-                                const index = customer_balance.findIndex(cus => cus.name === bills['name'])
-                                if (index >= 0) {
-                                    bills['balance_amount'] = customer_balance[index].balance_amount;
-                                }
-                            }
-                            if (col && col.length > 0) {
-                                lastcollection.push(col[0]);
-                                if (col.length > 2 || col.length == 2) {
-                                    lastcollection.push(col[1]);
-                                }
-                                const collectionInd = lastcollection.findIndex(coll=> coll.customer_name === bills['name']);
-                                if (collectionInd >= 0) {
-                                    bills.collectionData = col[collectionInd];
-                                }
-                            }
-                        })
+                        res.send(billprintData['bills']);
+                    } else {
+                        res.send(billprintData['bills']);
                     }
-                    res.send(billprintData['bills']);
                 })
                 .catch(err => {
                     res.status(500).send({
@@ -90,63 +65,37 @@ exports.getBillPrints = (req, res) => {
     }
 }
 
-function maxRecordsCount(customerData) {
-    let finalArray = [];
-    let filteredArray = [];
-    customerData.forEach((dataObject, index) => {
-      dataObject.items.forEach((re, ind) => {
-        re['no'] = ind + 1;
-      })
-      if (dataObject.items.length > breakCount + 1) {
-        let firstPart = dataObject.items.slice(0, breakCount)
-        let secondPart = dataObject.items.slice(breakCount)
-        let firstData = { ...dataObject }
-        firstData.items = firstPart;
-        firstData['bill_date'] = dataObject.bill_date;
-        firstData['name'] = dataObject.name;
-        firstData['phone_number'] = dataObject.phone_number;
-        firstData['balance_amount'] = dataObject.balance_amount;
-        let secondData = { ...dataObject }
-        secondData.items = secondPart;
-        secondData['bill_date'] = dataObject.bill_date;
-        secondData['name'] = dataObject.name;
-        secondData['phone_number'] = dataObject.phone_number;
-        secondData['balance_amount'] = dataObject.balance_amount;
-        secondData['total_balance'] = dataObject.total_balance;
-        // secondData.total_bill = returnSum(secondData.items);
-        // firstData.total_bill = returnSum(firstData.items);
-        firstData.bill_amount = returnSum(firstData.items);
-        secondData.bill_amount = returnSum(secondData.items);
-        filteredArray.push(firstData);
-        filteredArray.push(secondData);
-      } else {
-        // let total_amount = 0;
-        // dataObject.items.forEach(async obj => {
-        //     total_amount = total_amount + obj.total_amount;
-        // })
-        filteredArray.push(dataObject)
-      }
-    })
-    
-    let hasCollectionExceedingLimit = filteredArray.some((item) => item.items.length > breakCount + 1);
-    if (hasCollectionExceedingLimit) {
-      return maxRecordsCount(filteredArray)
-    } else {
-        filteredArray.forEach((f, inde) => {
-            // if ((inde) === 0) {
-            //     f['continue'] = 'Continue...';
-            // } else if (inde === 1) {
-            //     f['second'] = '(ii)';
-            // } else if (inde === 2) {
-            //     f['third'] = '(iii)';
-            // } else if (inde === 3) {
-            //     f['end'] = 'End...';
-            // }
-        })
-        finalArray = filteredArray;
-    }
-    return finalArray
-  } 
+const processBills = (bills) => {
+    return bills.map(bill => {
+        const {items, bill_date, name, phone_number, bill_amount, balance_amount, total_balance} = bill;
+        const maxItemsPerBill = 9;
+        const splitBillsData = [];
+        let sequenceNumber = 1;
+
+        for (let i = 0; i < items.length; i += maxItemsPerBill) {
+            const chunk = items.slice(i, i + maxItemsPerBill).map(item => ({
+                ...item,
+                no: sequenceNumber++
+            }));
+            const newBill = {
+                name,
+                bill_date,
+                phone_number,
+                items: chunk,
+                continue: 'Continue...'
+            }
+
+            if (i + maxItemsPerBill >= items.length) {
+                newBill.bill_amount = bill_amount;
+                newBill.balance_amount = balance_amount;
+                newBill.total_balance = total_balance;
+                delete newBill.continue;
+            }
+            splitBillsData.push(newBill);
+        }
+        return splitBillsData;
+    }).flat();
+} 
 
   function returnSum(customerData) {
     return customerData.reduce((count, item) => {
