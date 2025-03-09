@@ -30,11 +30,25 @@ exports.getBillPrints = (req, res) => {
                 var query = billPrintModel.find(dateQuery);
                 query.exec().then(async billsData => {
                     let bills_data = billsData;
+                    let customerIds = [];
                     let billprintData = {
                         'bills': [],
                         'collections': []
                     };
                     if (bills_data && bills_data.length > 0) {
+                        bills_data.forEach(async bill => {
+                            customerIds.push(bill.customer_id);
+                            bill['collections'] = [];
+                        });
+                        let col = await collectionModel.find({ 'customer_id': { $in: customerIds } }).sort({'modified_at': -1});
+                        if (col.length > 0) {
+                            col.forEach(coll => {
+                                let cusInd = bills_data.findIndex(bills => bills.customer_id === coll.customer_id);
+                                if (bills_data[cusInd]['collections'].length <= 1) {
+                                    bills_data[cusInd]['collections'].push(coll)
+                                }
+                            });
+                        }
                         const processedBillsData = await processBills(bills_data);
                         billprintData['bills'] = processedBillsData;
                         res.send(billprintData['bills']);
@@ -67,7 +81,7 @@ exports.getBillPrints = (req, res) => {
 
 const processBills = (bills) => {
     return bills.map(bill => {
-        const {items, bill_date, name, phone_number, bill_amount, balance_amount, total_balance} = bill;
+        const {items, bill_date, name, phone_number, bill_amount, balance_amount, total_balance, collections} = bill;
         const maxItemsPerBill = 9;
         const splitBillsData = [];
         let sequenceNumber = 1;
@@ -89,6 +103,7 @@ const processBills = (bills) => {
                 newBill.bill_amount = bill_amount;
                 newBill.balance_amount = balance_amount;
                 newBill.total_balance = total_balance;
+                newBill.collections = collections;
                 delete newBill.continue;
             }
             splitBillsData.push(newBill);
