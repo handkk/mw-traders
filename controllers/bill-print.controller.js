@@ -82,7 +82,7 @@ exports.getBillPrints = (req, res) => {
 const processBills = (bills) => {
     return bills.map(bill => {
         const {items, bill_date, name, phone_number, bill_amount, balance_amount, total_balance, collections} = bill;
-        const maxItemsPerBill = 9;
+        const maxItemsPerBill = 11;
         const splitBillsData = [];
         let sequenceNumber = 1;
 
