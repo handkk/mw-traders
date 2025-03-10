@@ -74,6 +74,34 @@ exports.createUser = (req, res) => {
                     req.body['userId'] = uuid;
                     req.body['created_at'] = new Date();
                     req.body['modified_at'] = new Date();
+                    req.body['apps'] = {
+                        "customer": {
+                          "isEdit": false,
+                          "isView": true
+                        },
+                        "bill": {
+                          "isEdit": false,
+                          "isView": true
+                        },
+                        "collection": {
+                          "isEdit": false,
+                          "isView": true
+                        },
+                        "farmer": {
+                          "isEdit": false,
+                          "isView": true
+                        },
+                        "vegetable": {
+                          "isEdit": false,
+                          "isView": true
+                        },
+                        "billprint": {
+                          "isView": true
+                        },
+                        "statement": {
+                          "isView": true
+                        }
+                      }
                     // const pwd = req.body['password'];
                     // req.body['password'] = encrypt(pwd);
                     const user = new userModel(req.body);
