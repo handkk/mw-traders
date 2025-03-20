@@ -345,6 +345,7 @@ exports.deleteBill = (req, res) => {
                                             }
                                             if (new_bill_print.items && new_bill_print.items.length > 0) {
                                                 new_bill_print['bill_amount'] = new_bill_print['bill_amount'] - data.total_amount;
+                                                new_bill_print['total_balance'] = new_bill_print['total_balance'] - data.total_amount;
                                                 billPrintModel.findOneAndUpdate({ 'bill_date': bill_date, 'customer_id': customerId }, { ...new_bill_print }, { returnDocument: "after" }).then(update_billprint => {
 
                                                     // Delete Bill
