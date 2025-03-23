@@ -13,8 +13,12 @@ var maxcount=3
 exports.getCustomers = (req, res) => {
     const limit = req.body.limit ? req.body.limit : 10000;
     const skip = req.body.skip ? (req.body.skip - 1) : 0;
+    let searchquery = {};
+    if (req.body.name) {
+        searchquery = {'name': {$regex: `^${req.body.name}`, $options: 'i'}}
+    }
     customerModel.count().then(count => {
-        var query = customerModel.find({}).sort({ 'modified_at': -1 }).skip(skip * limit).limit(limit);
+        var query = customerModel.find(searchquery).sort({ 'modified_at': -1 }).skip(skip * limit).limit(limit);
         query.exec().then(customersData => {
             const result = {
                 'data': customersData,
