@@ -206,7 +206,7 @@ exports.createBill = (req, res) => {
                                                         'modified_at': new Date(),
                                                         'balance_amount': cus.balance_amount,
                                                         'bill_amount': req.body['total_amount'],
-                                                        'total_balance': cus.balance_amount + req.body['total_amount']
+                                                        'total_balance': Math.round(cus.balance_amount + req.body['total_amount'])
                                                     }
                                                     const billPrint = new billPrintModel(billPrintBody);
                                                     billPrint.save(billPrint).then(billprint => {
@@ -223,7 +223,7 @@ exports.createBill = (req, res) => {
                                                     bill_print['modified_at'] = new Date()
                                                     bill_print['balance_amount'] = bill_print['balance_amount']
                                                     bill_print['bill_amount'] = bill_print['bill_amount'] + req.body['total_amount'];
-                                                    bill_print['total_balance'] = bill_print['balance_amount'] + bill_print['bill_amount']
+                                                    bill_print['total_balance'] = Math.round(bill_print['balance_amount'] + bill_print['bill_amount'])
                                                     billPrintModel.findOneAndUpdate({ '_id': bill_print._id }, { ...bill_print }, { returnDocument: "after" })
                                                         .then(bill_print_updated => {
                                                             // res.send(newbilldata);
