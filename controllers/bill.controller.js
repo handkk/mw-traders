@@ -97,7 +97,7 @@ exports.createBill = (req, res) => {
                         let newbal = 0;
                         let last_amount_updated = customerData['last_amount_updated'];
                         let balance_amount = customerData['balance_amount'];
-                        if (todayBillfound.length === 0 && last_amount_updated > 0) {
+                        if (todayBillfound.length === 0 && last_amount_updated !== 0) {
                             newbal = balance_amount + last_amount_updated;
                             customerData['last_amount_updated'] = item_amount;
                             customerData['balance_amount'] = newbal;
