@@ -313,73 +313,84 @@ exports.deleteBill = (req, res) => {
                                 .then(cus => {
                                     billPrintModel.findOne({ 'bill_date': bill_date, 'customer_id': customerId })
                                         .then(async billprint => {
-                                            let new_bill_print = billprint;
-                                            let existingCollectionsIndex;
-                                            existingCollectionsIndex = new_bill_print.items.findIndex(item => item.billId === id);
-                                            new_bill_print.items.splice(existingCollectionsIndex, 1);
-                                            let farmerBill_delete = await farmerBillModel.findOne({ 'farmer_id': data.farmer_id, 'date': data['bill_date'] });
-                                            if (farmerBill_delete) {
-                                                let updateFarmer_del = farmerBill_delete;
-                                                const vegetableInd = updateFarmer_del.vegetables.findIndex(veg => (veg.name === data.vegetable_name && veg.rate === data.rate));
-                                                if (vegetableInd !== -1) {
-                                                    const quantity = updateFarmer_del.vegetables[vegetableInd].quantity - data.quantity;
-                                                    const amount = updateFarmer_del.vegetables[vegetableInd].amount - data.total_amount;
-                                                    if (quantity > 0) {
-                                                        updateFarmer_del.vegetables[vegetableInd].quantity = quantity;
-                                                        updateFarmer_del.vegetables[vegetableInd].amount = amount;
-                                                    } else if (quantity === 0) {
-                                                        updateFarmer_del.vegetables.splice(vegetableInd, 1);
-                                                    }
-                                                    let farmerBillUpdate = await farmerBillModel.findOneAndUpdate({ 'farmer_id': data.farmer_id, 'date': data['bill_date'] }, {
-                                                        'balance': updateFarmer_del.balance - data['total_amount'],
-                                                        'balance_amount': updateFarmer_del.balance_amount - data['total_amount'],
-                                                        'vegetables': updateFarmer_del.vegetables,
-                                                        'modified_at': new Date()
-                                                    }, { returnDocument: "after" });
-                                                    if (farmerBillUpdate) {
-                                                        // console.log('\n farmerBillUpdate updated');
-                                                    } else {
-                                                        // console.log('\n farmerBillUpdate not updated');
+                                            if (billprint) {
+                                                let new_bill_print = billprint;
+                                                let existingCollectionsIndex;
+                                                existingCollectionsIndex = new_bill_print.items.findIndex(item => item.billId === id);
+                                                new_bill_print.items.splice(existingCollectionsIndex, 1);
+                                                let farmerBill_delete = await farmerBillModel.findOne({ 'farmer_id': data.farmer_id, 'date': data['bill_date'] });
+                                                if (farmerBill_delete) {
+                                                    let updateFarmer_del = farmerBill_delete;
+                                                    const vegetableInd = updateFarmer_del.vegetables.findIndex(veg => (veg.name === data.vegetable_name && veg.rate === data.rate));
+                                                    if (vegetableInd !== -1) {
+                                                        const quantity = updateFarmer_del.vegetables[vegetableInd].quantity - data.quantity;
+                                                        const amount = updateFarmer_del.vegetables[vegetableInd].amount - data.total_amount;
+                                                        if (quantity > 0) {
+                                                            updateFarmer_del.vegetables[vegetableInd].quantity = quantity;
+                                                            updateFarmer_del.vegetables[vegetableInd].amount = amount;
+                                                        } else if (quantity === 0) {
+                                                            updateFarmer_del.vegetables.splice(vegetableInd, 1);
+                                                        }
+                                                        let farmerBillUpdate = await farmerBillModel.findOneAndUpdate({ 'farmer_id': data.farmer_id, 'date': data['bill_date'] }, {
+                                                            'balance': updateFarmer_del.balance - data['total_amount'],
+                                                            'balance_amount': updateFarmer_del.balance_amount - data['total_amount'],
+                                                            'vegetables': updateFarmer_del.vegetables,
+                                                            'modified_at': new Date()
+                                                        }, { returnDocument: "after" });
+                                                        if (farmerBillUpdate) {
+                                                            // console.log('\n farmerBillUpdate updated');
+                                                        } else {
+                                                            // console.log('\n farmerBillUpdate not updated');
+                                                        }
                                                     }
                                                 }
-                                            }
-                                            if (new_bill_print.items && new_bill_print.items.length > 0) {
-                                                new_bill_print['bill_amount'] = new_bill_print['bill_amount'] - data.total_amount;
-                                                new_bill_print['total_balance'] = new_bill_print['total_balance'] - data.total_amount;
-                                                billPrintModel.findOneAndUpdate({ 'bill_date': bill_date, 'customer_id': customerId }, { ...new_bill_print }, { returnDocument: "after" }).then(update_billprint => {
+                                                if (new_bill_print.items && new_bill_print.items.length > 0) {
+                                                    new_bill_print['bill_amount'] = new_bill_print['bill_amount'] - data.total_amount;
+                                                    new_bill_print['total_balance'] = new_bill_print['total_balance'] - data.total_amount;
+                                                    billPrintModel.findOneAndUpdate({ 'bill_date': bill_date, 'customer_id': customerId }, { ...new_bill_print }, { returnDocument: "after" }).then(update_billprint => {
 
-                                                    // Delete Bill
-                                                    billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
-                                                        res.send({ success: true, message: "Bill Deleted Successfully" });
+                                                        // Delete Bill
+                                                        billModel.findOneAndRemove({ '_id': id }).then(billRemoved => {
+                                                            res.send({ success: true, message: "Bill Deleted Successfully" });
+                                                        })
+                                                            .catch(err => {
+                                                                res.status(500).send({
+                                                                    message: err.message || 'bill not removed'
+                                                                });
+                                                            })
                                                     })
                                                         .catch(err => {
                                                             res.status(500).send({
-                                                                message: err.message || 'bill not removed'
+                                                                message: err.message || 'bill print not updated'
                                                             });
                                                         })
-                                                })
-                                                    .catch(err => {
+                                                } else if (new_bill_print.items && new_bill_print.items.length === 0) {
+                                                    try {
+                                                        const delete_bill_print = await billPrintModel.findOneAndDelete({ 'bill_date': bill_date, 'customer_id': customerId })
+                                                        // Delete Bill
+                                                        billModel.findOneAndDelete({ '_id': id }).then(billRemoved => {
+                                                            res.send({ success: true, message: "Bill Deleted Successfully" });
+                                                        })
+                                                            .catch(err => {
+                                                                res.status(500).send({
+                                                                    message: err.message || 'bill not removed'
+                                                                });
+                                                            })
+                                                    } catch (e) {
                                                         res.status(500).send({
-                                                            message: err.message || 'bill print not updated'
-                                                        });
-                                                    })
-                                            } else if (new_bill_print.items && new_bill_print.items.length === 0) {
-                                                try {
-                                                    const delete_bill_print = await billPrintModel.findOneAndDelete({ 'bill_date': bill_date, 'customer_id': customerId })
-                                                    // Delete Bill
-                                                    billModel.findOneAndDelete({ '_id': id }).then(billRemoved => {
-                                                        res.send({ success: true, message: "Bill Deleted Successfully" });
-                                                    })
-                                                        .catch(err => {
-                                                            res.status(500).send({
-                                                                message: err.message || 'bill not removed'
-                                                            });
+                                                            message: err.message || 'bill not removed'
                                                         })
-                                                } catch (e) {
+                                                    }
+                                                }
+                                            } else {
+                                                billModel.findOneAndDelete({ '_id': id }).then(billRemoved => {
+                                                    res.send({ success: true, message: "Bill Deleted Successfully" });
+                                                })
+                                                .catch(err => {
                                                     res.status(500).send({
                                                         message: err.message || 'bill not removed'
-                                                    })
-                                                }
+                                                    });
+                                                })
                                             }
                                         })
                                         .catch(err => {
