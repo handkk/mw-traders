@@ -156,7 +156,7 @@ exports.createBill = (req, res) => {
                                         'modified_at': new Date()
                                     }, { returnDocument: "after" });
                                     if (farmerBillUpdate) {
-                                        // console.log('\n farmerBillUpdate updated');
+                                        
                                     } else {
                                         // console.log('\n farmerBillUpdate not updated');
                                     }
