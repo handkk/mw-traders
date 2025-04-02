@@ -77,7 +77,7 @@ exports.createCollection = (req, res) => {
             req.body['created_by'] = user.username;
             customerModel.findOne({'_id': collectiondata.customer_id}).then(customer_data => {
                 if (customer_data) {
-                    if (customer_data.balance_amount !== 0) {
+                    // if (customer_data.balance_amount !== 0) {
                         let customer_pending_balance = customer_data.balance_amount;
                         req.body['customer_balance'] = customer_pending_balance - req.body.amount;
                         const collection = new collectionModel(req.body);
@@ -109,7 +109,7 @@ exports.createCollection = (req, res) => {
                                 message: err.message || 'Save operation is not occured'
                             });
                         })
-                    }
+                    // }
                     
                 } else {
                     res.status(403).send({
